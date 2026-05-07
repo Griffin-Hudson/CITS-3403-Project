@@ -635,6 +635,11 @@
   color: #fff;
   text-shadow: 0 2px 12px rgba(0,0,0,0.5);
   margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Row of metadata tags (genre, BPM, key, mood) */
@@ -657,7 +662,7 @@
   letter-spacing: 0.02em;
 }
 /* Mood tag uses teal accent to distinguish it from factual tags */
-.feed-tag-mood { color: var(--ts-teal); border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.08); }
+.feed-tag-mood { color: var(--ts-teal); border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.08); text-transform: lowercase; }
 
 /* ── 3-tier pricing panel ───────────────────────────────────
    Horizontal row of Lease / Premium / Exclusive price blocks.
