@@ -1,15 +1,26 @@
 import logging
+import sqlite3
 from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 from app.config import Config
 
 # Defined at module level so other modules can import them without triggering circular imports
 login_manager = LoginManager()
 csrf = CSRFProtect()
 limiter = Limiter(key_func=get_remote_address, default_limits=[])
+
+
+@event.listens_for(Engine, 'connect')
+def _enforce_sqlite_fk(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute('PRAGMA foreign_keys = ON')
+        cursor.close()
 
 
 def create_app(config_class=Config):

@@ -7,6 +7,15 @@ from wtforms import BooleanField, FloatField, IntegerField, StringField, Passwor
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 
 
+def _safe_url(form, field):
+    """Reject URLs with dangerous schemes (javascript:, data:, vbscript:, etc.)."""
+    if not field.data:
+        return
+    v = field.data.strip().lower()
+    if not (v.startswith('/') or v.startswith('http://') or v.startswith('https://')):
+        raise ValidationError('URL must be a relative path or start with http:// or https://')
+
+
 # Mainstream password rules: 8–128 chars, mixed case, digit, special char.
 PASSWORD_SPECIAL_CHARS = r"!@#$%^&*()\-_=+\[\]{};:'\",.<>/?\\|`~"
 _PASSWORD_SPECIAL_RE = re.compile(f'[{PASSWORD_SPECIAL_CHARS}]')
@@ -67,8 +76,8 @@ class UploadBeatForm(FlaskForm):
     price           = FloatField('Basic Lease Price',     validators=[DataRequired(), NumberRange(min=0)])
     premium_price   = FloatField('Premium License Price', validators=[Optional(), NumberRange(min=0)])
     exclusive_price = FloatField('Exclusive Rights Price', validators=[Optional(), NumberRange(min=0)])
-    audio_url = StringField('Audio File URL', validators=[DataRequired(), Length(max=256)])
-    cover_url = StringField('Cover Image URL', validators=[Optional(), Length(max=256)])
+    audio_url = StringField('Audio File URL', validators=[DataRequired(), Length(max=256), _safe_url])
+    cover_url = StringField('Cover Image URL', validators=[Optional(), Length(max=256), _safe_url])
     submit    = SubmitField('Upload Beat')
 
 

@@ -346,7 +346,7 @@ def beat_detail(beat_id):
                            is_following=is_following)
 
 
-@main.route('/follow/<int:user_id>')
+@main.route('/follow/<int:user_id>', methods=['POST'])
 @login_required
 def follow(user_id):
     user = User.query.get_or_404(user_id)
