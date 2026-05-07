@@ -34,9 +34,11 @@ def feed():
     exclude_raw = request.args.get('seen', '')
     exclude_ids = [int(x) for x in exclude_raw.split(',') if x.strip().isdigit()]
 
-    # Fetch one extra page-worth so we can determine `has_next` without a separate COUNT query
-    beats = get_feed_beats(current_user, limit=page * per_page + per_page, exclude_ids=exclude_ids)
-    page_beats = beats[(page - 1) * per_page: page * per_page]
+    # `seen` already excludes every previously rendered beat, so the ranked result
+    # is always a fresh set — slice from 0, not from a page offset.
+    # Fetch one extra to determine has_next without a separate COUNT query.
+    beats = get_feed_beats(current_user, limit=per_page + 1, exclude_ids=exclude_ids)
+    page_beats = beats[:per_page]
 
     # Batch-load interaction states in 3 queries instead of 3×N
     liked_ids = set()
@@ -86,7 +88,7 @@ def feed():
             'is_trending':         b.is_trending,
         })
 
-    return jsonify({'beats': result, 'has_next': len(beats) > page * per_page, 'page': page})
+    return jsonify({'beats': result, 'has_next': len(beats) > per_page, 'page': page})
 
 
 # ---------------------------------------------------------------------------

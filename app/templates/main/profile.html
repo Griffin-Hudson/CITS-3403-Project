@@ -66,15 +66,18 @@
         {% if current_user.id == user.id %}
           <a href="{{ url_for('main.edit_profile') }}" class="profile-follow-btn">Edit Profile</a>
         {% else %}
-          {# The button is wired up by profile.js via the API endpoint;
-             the href is a non-JS fallback so follow still works without JS #}
-          <a href="{{ url_for('main.follow', user_id=user.id) }}"
-             class="profile-follow-btn {% if is_following %}is-following{% endif %}"
-             id="profile-follow-btn"
-             data-producer-id="{{ user.id }}"
-             data-following="{{ 'true' if is_following else 'false' }}">
-            {% if is_following %}Unfollow{% else %}Follow{% endif %}
-          </a>
+          {# POST form so the no-JS fallback is CSRF-protected.
+             JS intercepts the click and calls the API instead. #}
+          <form method="POST" action="{{ url_for('main.follow', user_id=user.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit"
+                    class="profile-follow-btn {% if is_following %}is-following{% endif %}"
+                    id="profile-follow-btn"
+                    data-producer-id="{{ user.id }}"
+                    data-following="{{ 'true' if is_following else 'false' }}">
+              {% if is_following %}Unfollow{% else %}Follow{% endif %}
+            </button>
+          </form>
         {% endif %}
       {% else %}
         {# Guest — send to register to follow #}
@@ -292,7 +295,7 @@
   const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
   btn.addEventListener('click', async function (e) {
-    e.preventDefault();  /* block the <a href> fallback navigation */
+    e.preventDefault();  /* block the form's POST fallback submission */
 
     const producerId = btn.dataset.producerId;
     btn.disabled = true;
