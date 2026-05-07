@@ -2,12 +2,13 @@
 TuneFeed — Sample database seeder.
 Run from the project root:  python seed.py
 
-Creates sample producers, beats (BeatStars-inspired data), likes,
+Creates sample producers, beats, likes,
 comments, and replies so every feed feature can be tested immediately.
 Drops and recreates all tables on each run.
 """
 
-import sys, os
+import os
+import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from datetime import datetime, timedelta
@@ -24,67 +25,74 @@ random.seed(42)
 
 PRODUCERS = [
     {
-        "username": "MetroPhantom",
-        "email": "metro@tunefeed.io",
+        "username": "ProducedByU",
+        "email": "prodbyu@tunefeed.io",
         "password": "password123",
-        "bio": "Trap & Melodic Hip-Hop producer. 8+ years crafting cinematic soundscapes.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=metro",
+        "bio": "Trap & Dark Hip-Hop producer. Cinematic soundscapes, eerie melodies, and hard-hitting 808s.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=prodbyu",
     },
     {
-        "username": "CxidBlooded",
-        "email": "cxid@tunefeed.io",
+        "username": "ProducedByKyle",
+        "email": "producedbykyle@tunefeed.io",
         "password": "password123",
-        "bio": "Lo-Fi & Chill beats. Perfect for late-night study sessions and creative flow.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=cxid",
+        "bio": "Producer.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=producedbykyle",
     },
     {
-        "username": "BasslineKing",
-        "email": "bassline@tunefeed.io",
+        "username": "Swayy",
+        "email": "swayy@tunefeed.io",
         "password": "password123",
-        "bio": "UK Drill & Grime. Hard-hitting 808s and razor-sharp hi-hats.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=bass",
+        "bio": "Dancehall & Tropical producer. Smooth melodies, bouncy rhythms, and feel-good energy.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=swayy",
     },
     {
-        "username": "SynthWave",
-        "email": "synth@tunefeed.io",
+        "username": "VocaVoice",
+        "email": "vocavoice@tunefeed.io",
         "password": "password123",
-        "bio": "Synthwave & Retrowave specialist. 80s-inspired neon sonic worlds.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=synth",
+        "bio": "Vocal sample producer. Chopped voices, flipped melodies, and soulful textures that breathe.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=vocavoice",
     },
     {
-        "username": "AfrobeatsLab",
-        "email": "afro@tunefeed.io",
+        "username": "TenTens",
+        "email": "tentens@tunefeed.io",
         "password": "password123",
-        "bio": "Afrobeats, Amapiano & Dancehall. Authentic African sounds for the world stage.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=afro",
+        "bio": "Afrobeat producer. Warm rhythms, breezy melodies, and sun-soaked vibes inspired by the continent's finest.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=tentens",
     },
     {
-        "username": "JazzFusion",
-        "email": "jazz@tunefeed.io",
+        "username": "Jazzzed",
+        "email": "jazzzed@tunefeed.io",
         "password": "password123",
-        "bio": "Jazz, Funk & Soul production. Smooth grooves that hit differently.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=jazz",
+        "bio": "Jazz, boom-bap & soul. Dusty samples, smooth keys, and crate-digger energy.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=jazzzed",
     },
     {
-        "username": "TechnoVortex",
-        "email": "techno@tunefeed.io",
+        "username": "FakeTech",
+        "email": "faketech@tunefeed.io",
         "password": "password123",
-        "bio": "Techno & House music. Hypnotic loops and pulsing rhythms for the dancefloor.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=techno",
+        "bio": "Electronic & Club producer. Heavy bass, hypnotic loops, and floor-shaking rhythms.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=faketech",
     },
     {
-        "username": "SoulSmoke",
-        "email": "soul@tunefeed.io",
+        "username": "YoungTiller",
+        "email": "youngtiller@tunefeed.io",
         "password": "password123",
-        "bio": "R&B & Soul beats with deep grooves. Emotion first, technique second.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=soul",
+        "bio": "R&B & Trap Soul producer. Late-night melodies, moody atmospheres, and raw emotion.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=youngtiller",
     },
     {
-        "username": "PhonkDealer",
-        "email": "phonk@tunefeed.io",
+        "username": "DaysNoTrace",
+        "email": "daystrace@tunefeed.io",
         "password": "password123",
-        "bio": "Memphis Phonk & Dark Trap. Distorted 808s and eerie samples.",
-        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=phonk",
+        "bio": "Alternative rock & emo producer. Heavy guitars, dark melodies, and raw emotion.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=daystrace",
+    },
+    {
+        "username": "VelvetPeril",
+        "email": "velvet@tunefeed.io",
+        "password": "password123",
+        "bio": "Indie rock & alternative producer. Guitar-driven instrumentals with raw emotional depth.",
+        "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=velvet",
     },
 ]
 
@@ -98,66 +106,109 @@ DEMO_USER = {
 }
 
 # ---------------------------------------------------------------------------
-# Beat catalogue  — BeatStars-inspired realistic data
+# Beat catalogue
 # (title, prod_idx, genre, bpm, key, mood_tag, duration, licence,
 #  lease_price, premium_price, exclusive_price, plays, is_trending, days_ago)
 # ---------------------------------------------------------------------------
 
+# Maps every beat title to its local static MP3 path in app/static/audio/
+AUDIO_PATHS = {
+    "Last Summer":                              "/static/audio/last_summer.mp3",
+    "Summer Girl":                              "/static/audio/summer_girl.mp3",
+    "Overdue":                                  "/static/audio/overdue.mp3",
+    "Endings":                                  "/static/audio/endings.mp3",
+    "No More Pain":                             "/static/audio/no_more_pain.mp3",
+    "Unbroken":                                 "/static/audio/unbroken.mp3",
+    "Too Late":                                 "/static/audio/too_late.mp3",
+    "Leave Me":                                 "/static/audio/leave_me.mp3",
+    "Don't Worry":                              "/static/audio/dont_worry.mp3",
+    "Me & You":                                 "/static/audio/me_and_you.mp3",
+    "Rosas":                                    "/static/audio/rosas.mp3",
+    "All My Trust":                             "/static/audio/all_my_trust.mp3",
+    "In My Head":                               "/static/audio/in_my_head.mp3",
+    "One Night":                                "/static/audio/one_night.mp3",
+    "Mind Games":                               "/static/audio/mind_games.mp3",
+    "I Know":                                   "/static/audio/i_know.mp3",
+    "Boombox":                                  "/static/audio/boombox.mp3",
+    "Spin":                                     "/static/audio/spin.mp3",
+    "Jasmine":                                  "/static/audio/jasmine.mp3",
+    "Camomile":                                 "/static/audio/camomile.mp3",
+    "DRIVER":                                   "/static/audio/driver.mp3",
+    "THE CITY":                                 "/static/audio/the_city.mp3",
+    "POISON":                                   "/static/audio/poison.mp3",
+    "ENEMY":                                    "/static/audio/enemy.mp3",
+    "Chemistry":                                "/static/audio/chemistry.mp3",
+    "CALL ME":                                  "/static/audio/call_me.mp3",
+    "BALANCE":                                  "/static/audio/balance.mp3",
+    "Shy2":                                     "/static/audio/shy2.mp3",
+    "IN THE RAIN":                              "/static/audio/in_the_rain.mp3",
+    "Angels Singing":                           "/static/audio/angels_singing.mp3",
+    "Feelings":                                 "/static/audio/feelings.mp3",
+    "ABUNDANT IN MERCY":                        "/static/audio/abundant_in_mercy.mp3",
+    "Don't Be Shy":                             "/static/audio/dont_be_shy.mp3",
+    "Reflection":                               "/static/audio/reflection.mp3",
+    "Psyched":                                  "/static/audio/psyched.mp3",
+    "ROLLERCOASTER":                            "/static/audio/rollercoaster.mp3",
+}
+
 BEATS = [
-    # CORS_AUDIO cycles: position % 11 selects the audio file.
-    # Beats are ordered so every 11th position reuses the same audio, and
-    # the BPM / genre / key are matched to the actual audio character.
-    #
     # (title, prod, genre, bpm, key, mood, dur, licence, lease, premium, excl, plays, trending, days_ago)
 
-    # pos 0 / 11 / 22 → viper.mp3  (energetic electronic ~130 BPM)
-    ("Phantom Nights",       0, "Trap",       130, "C Min",  "Dark",       "3:24", "Non-exclusive",  29.99,  79.99, 299.99,    9, True,   2),
-    # pos 1 / 12 / 23 → rave_digger.mp3  (rave / EDM ~140 BPM)
-    ("Drift Mode",           8, "Phonk",      140, "D Min",  "Aggressive", "2:58", "Non-exclusive",  14.99,  39.99, 149.99,   12, True,   1),
-    # pos 2 / 13 / 24 → outfoxing.mp3  (upbeat jazz / folk ~110 BPM)
-    ("Smooth Jazz Nights",   5, "Jazz",       110, "F Maj",  "Smooth",     "4:12", "Non-exclusive",  17.99,  44.99, 179.99,    6, False,  5),
-    # pos 3 / 14 / 25 → 80s_vibe.mp3  (synthwave ~120–124 BPM)
-    ("Neon Retrograde",      3, "Synthwave",  120, "F# Maj", "Nostalgic",  "3:45", "Non-exclusive",  24.99,  64.99, 249.99,   11, True,   2),
-    # pos 4 / 15 / 26 → bassguitar.mp3  (bass groove ~105–108 BPM)
-    ("Soul Voyage",          7, "R&B",        105, "G Min",  "Smooth",     "3:42", "Non-exclusive",  18.99,  47.99, 189.99,   10, True,   1),
-    # pos 5 / 16 / 27 → running_out.mp3  (energetic ~125 BPM)
-    ("UK Drill Energy",      2, "Drill",      125, "D Min",  "Aggressive", "3:12", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
-    # pos 6 / 17 / 28 → drums.mp3  (drum groove ~120 BPM)
-    ("Cold Pavement",        2, "Drill",      120, "C Min",  "Dark",       "3:05", "Exclusive",      29.99,  74.99, 299.99,    4, True,   1),
-    # pos 7 / 18 / 29 → leadguitar.mp3  (rock guitar ~128–130 BPM)
-    ("Haunted Highway",      8, "Phonk",      130, "A Min",  "Dark",       "3:12", "Non-exclusive",  14.99,  39.99, 149.99,   11, True,   2),
-    # pos 8 / 19 / 30 → horns.mp3  (brass / afro ~110–112 BPM)
-    ("Amapiano Sunrise",     4, "Amapiano",   112, "A Min",  "Smooth",     "3:24", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   1),
-    # pos 9 / 20 / 31 → clav.mp3  (funky clavinet ~95–96 BPM)
-    ("Midnight Coffee",      1, "Lo-Fi",       96, "A Min",  "Chill",      "2:45", "Non-exclusive",  12.99,  34.99, 129.99,    5, False, 21),
-    # pos 10 / 21 / 32 → rnb-lofi-melody-loop.wav  (R&B lo-fi ~78–85 BPM)
-    ("Chill Vibes Study",    1, "Lo-Fi",        85, "A Min",  "Chill",     "2:58", "Non-exclusive",  14.99,  39.99, 149.99,   13, True,   1),
+    # ── ProducedByU — Trap ───────────────────────────────────────────────────
+    ("DRIVER",    0, "Trap", 130, "C# Min", "dark,melodic,cinematic",            "3:00", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
+    ("THE CITY",  0, "Trap", 126, "C# Min", "atmospheric,smooth,moody",          "3:10", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
+    ("POISON",    0, "Trap", 136, "C# Min", "eerie,emotional,melodic",           "2:50", "Non-exclusive",  24.99,  64.99, 249.99,    9, False,  2),
+    ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,distorted,energetic","3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
 
-    # ── Second cycle (positions 11–21) ────────────────────────────────────────
-    ("Melodic Trap Flow",    0, "Trap",       128, "B Min",  "Emotional",  "3:18", "Non-exclusive",  24.99,  64.99, 249.99,    8, True,   5),
-    ("Hellfire 808",         8, "Dark Trap",  142, "F Min",  "Aggressive", "2:45", "Exclusive",      24.99,  64.99, 249.99,    6, False,  9),
-    ("Lagos Groove",         4, "Afrobeats",  112, "G Min",  "Energetic",  "3:33", "Non-exclusive",  19.99,  49.99, 199.99,   10, False,  3),
-    ("Retrowave Drive",      3, "Synthwave",  122, "E Min",  "Energetic",  "4:02", "Non-exclusive",  22.99,  59.99, 229.99,    9, True,   6),
-    ("Midnight Groove",      7, "Hip-Hop",    108, "C Min",  "Dark",       "3:35", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  4),
-    ("Grime Cypher",         2, "Drill",      126, "A Min",  "Energetic",  "3:28", "Non-exclusive",  21.99,  54.99, 219.99,    5, False,  9),
-    ("Bass Cathedral",       6, "Techno",     122, "A Maj",  "Dark",       "4:10", "Non-exclusive",  21.99,  54.99, 219.99,    8, False,  6),
-    ("Memphis Nights",       8, "Phonk",      128, "C Min",  "Dark",       "3:05", "Non-exclusive",  14.99,  39.99, 149.99,    9, False,  5),
-    ("Lagos Sunset",         4, "Amapiano",   110, "G Min",  "Smooth",     "3:41", "Non-exclusive",  19.99,  49.99, 199.99,    8, False, 10),
-    ("Velvet Dreams",        7, "R&B",         96, "Eb Maj", "Romantic",   "3:55", "Premium Lease",  22.99,  54.99, 229.99,    4, False, 13),
-    ("Deep Focus",           1, "Lo-Fi",        80, "C Maj", "Ambient",    "3:05", "Non-exclusive",  14.99,  39.99, 149.99,   11, True,   3),
+    # ── ProducedByKyle — (beats coming) ──────────────────────────────────────
 
-    # ── Third cycle (positions 22–32) ─────────────────────────────────────────
-    ("Dark Skyline",         0, "Hip-Hop",    130, "C Min",  "Aggressive", "3:15", "Exclusive",      34.99,  89.99, 349.99,    3, False, 12),
-    ("Hypnotic Pulse",       6, "Techno",     140, "D Maj",  "Energetic",  "4:22", "Non-exclusive",  21.99,  54.99, 219.99,    9, True,   2),
-    ("Funk Laboratory",      5, "Funk",       108, "Bb Maj", "Energetic",  "3:56", "Non-exclusive",  17.99,  44.99, 179.99,    7, False,  8),
-    ("Club Frequency",       6, "House",      124, "F# Min", "Energetic",  "4:35", "Non-exclusive",  19.99,  49.99, 199.99,    7, False, 11),
-    ("Afro Love",            4, "Afrobeats",  107, "D Min",  "Romantic",   "3:15", "Non-exclusive",  17.99,  44.99, 179.99,    4, False, 16),
-    ("Block Politics",       2, "Grime",      126, "G Min",  "Aggressive", "3:18", "Non-exclusive",  19.99,  49.99, 199.99,    2, False, 14),
-    ("Retro Pulse",          3, "Synthwave",  125, "F# Maj", "Energetic",  "3:52", "Non-exclusive",  24.99,  64.99, 249.99,   10, False,  8),
-    ("Neon Aura",            0, "Hip-Hop",    128, "G Maj",  "Chill",      "3:42", "Premium Lease",  19.99,  49.99, 199.99,    3, False, 22),
-    ("Soul Journey",         5, "R&B",        108, "G Min",  "Emotional",  "3:48", "Premium Lease",  22.99,  54.99, 219.99,    3, False, 19),
-    ("Digital Sunset",       3, "Synthwave",   95, "B Min",  "Chill",      "4:15", "Premium Lease",  19.99,  49.99, 199.99,    3, False, 22),
-    ("Rainy Afternoon",      1, "Lo-Fi",        78, "F Maj", "Nostalgic",  "3:22", "Non-exclusive",  12.99,  34.99, 129.99,    9, False,  7),
+    # ── Swayy — Dancehall ────────────────────────────────────────────────────
+    ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "dancehall,smooth,melodic",     "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Reflection",     2, "Dancehall", 100, "G# Min", "tropical,emotional,melodic",   "3:15", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
+    ("Psyched",        2, "Dancehall", 140, "A Min",  "psychedelic,atmospheric,melodic","3:00","Non-exclusive", 22.99,  54.99, 219.99,    8, False,  3),
+    ("ROLLERCOASTER",  2, "Dancehall", 137, "B Min",  "energetic,bouncy,uplifting",   "2:55", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+
+    # ── VocaVoice — Vocal Sample ─────────────────────────────────────────────
+    ("IN THE RAIN",       3, "Trap",    154, "G Min",  "emotional,vocal sample,cinematic",   "3:05", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
+    ("Angels Singing",    3, "R&B",     106, "F# Min", "soulful,uplifting,melodic",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Feelings",          3, "Soul",     96, "F Min",  "sad,emotional,minimal",              "2:45", "Non-exclusive",  16.99,  39.99, 159.99,    7, False,  6),
+    ("ABUNDANT IN MERCY", 3, "Gospel",  140, "F# Min", "gospel,soulful,uplifting,cinematic", "3:15", "Non-exclusive",  22.99,  54.99, 219.99,    9, False,  2),
+
+    # ── TenTens — Afrobeat ───────────────────────────────────────────────────
+    ("Don't Worry",     4, "Afrobeat",  104, "Gb Maj", "chill,uplifting,smooth,atmospheric",  "3:20", "Non-exclusive",  18.99,  44.99, 179.99,   10, False,  2),
+    ("Me & You",        4, "Afrobeat",   98, "F Min",  "chill,emotional,melodic,nocturnal",   "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
+    ("Rosas",           4, "Afrobeat",   96, "G Min",  "chill,tropical,smooth,warm",          "3:25", "Non-exclusive",  19.99,  44.99, 179.99,    8, False,  4),
+    ("All My Trust",    4, "Afrobeat",  128, "C Min",  "energetic,rhythmic,melodic,vibrant",  "3:10", "Non-exclusive",  22.99,  54.99, 219.99,   11, True,   1),
+
+    # ── Jazzzed — Jazz / Boom Bap ────────────────────────────────────────────
+    ("Chemistry",   5, "Jazz",     123, "Eb Min", "chill,jazzy,smooth",            "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  2),
+    ("CALL ME",     5, "Jazz",      98, "F# Min", "nostalgic,soulful,retro",       "2:55", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
+    ("BALANCE",     5, "Boom Bap",  87, "G Min",  "boom bap,jazzy,laid-back",      "3:00", "Non-exclusive",  17.99,  44.99, 179.99,    8, True,   1),
+    ("Shy2",        5, "Jazz",     132, "C# Min", "melodic,atmospheric,smooth",    "2:50", "Non-exclusive",  22.99,  54.99, 219.99,    6, False,  5),
+
+    # ── FakeTech — Electronic ────────────────────────────────────────────────
+    ("Boombox",   6, "Electronic", 195, "F# Min", "aggressive,bass-heavy,club",       "2:50", "Non-exclusive",  24.99,  59.99, 229.99,    8, False,  2),
+    ("Spin",      6, "Electronic", 104, "F Min",  "dark,rhythmic,bounce",              "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  5),
+    ("Jasmine",   6, "Electronic", 105, "F# Min", "melodic,atmospheric,hypnotic",     "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Camomile",  6, "Electronic", 118, "G# Min", "dreamy,nostalgic,atmospheric",     "3:20", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
+
+    # ── YoungTiller — R&B ────────────────────────────────────────────────────
+    ("In My Head",   7, "R&B",  98, "F Min",  "late night,melodic,smooth,atmospheric",  "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("One Night",    7, "R&B",  90, "F# Min", "smooth,atmospheric,nocturnal,emotional", "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    6, False,  6),
+    ("Mind Games",   7, "R&B", 135, "Bb Min", "dark,emotional,melodic,moody",           "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    9, True,   2),
+    ("I Know",       7, "R&B",  80, "Gb Min", "slow,intimate,moody,ambient",            "3:30", "Premium Lease",  19.99,  49.99, 199.99,    5, False,  8),
+
+    # ── DaysNoTrace — Alternative Rock ───────────────────────────────────────
+    ("No More Pain",              8, "Alternative Rock", 195, "F# Min", "alternative rock,emotional,aggressive,intense",   "3:00", "Non-exclusive",  24.99,  64.99, 249.99,    6, False,  3),
+    ("Unbroken",                  8, "Alternative Rock", 130, "C Min",  "alternative rock,sad,emotional,dark",             "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Too Late",                  8, "Alternative Rock", 148, "C Min",  "alternative rock,melancholic,heavy,emotional",    "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
+    ("Leave Me",                  8, "Alternative Rock", 140, "A Min",  "alternative rock,sad,emotional,dark",             "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
+
+    # ── VelvetPeril — Indie Rock ─────────────────────────────────────────────
+    ("Last Summer",          9, "Indie Rock", 114, "B Min",  "indie rock,melancholic,guitar,emotional",    "3:30", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Summer Girl",          9, "Indie Rock", 163, "Ab Min", "indie rock,upbeat,emotional,summer vibe",    "2:58", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+    ("Overdue",              9, "Indie Rock", 176, "Eb Maj", "indie rock,fast tempo,emotional,atmospheric","3:05", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
+    ("Endings",              9, "Indie Rock", 171, "D Min",  "indie rock,cinematic,emotional,ambient",     "3:20", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
 ]
 
 # ---------------------------------------------------------------------------
@@ -166,32 +217,29 @@ BEATS = [
 
 COMMENTS = [
     # (beat_title, author_username, body, replies: [(username, body)])
-    ("Phantom Nights", "DemoUser",   "This hits different at 2am 🔥 need the stems ASAP",
-     [("CxidBlooded", "Facts, the melody is insane on this one"),
-      ("MetroPhantom", "Glad you like it! DM me for custom orders")]),
-    ("Phantom Nights", "SoulSmoke",  "The 808 slide at 1:20 is perfect. Copping the exclusive",
-     [("MetroPhantom", "Appreciate that! Exclusive is still available 🙏")]),
-    ("Chill Vibes Study", "DemoUser", "Been listening to this on loop for 3 hours straight, no cap",
-     [("CxidBlooded", "That's exactly what it was made for 🎧"),
-      ("PhonkDealer", "Bro same this whole pack is crazy")]),
-    ("Drift Mode", "BasslineKing", "The distorted 808 is INSANE. Memphis phonk is back fr",
-     [("PhonkDealer", "Always been back 😤 we just louder now"),
-      ("DemoUser",    "Copped this yesterday, already got a verse on it"),
-      ("SynthWave",   "Not my genre but I respect the craft on this one")]),
-    ("Amapiano Sunrise", "JazzFusion", "The piano chops are immaculate. Love how you layered the log drum",
-     [("AfrobeatsLab", "Spent 3 days on those chops 😅 glad it shows!")]),
-    ("Neon Retrograde",  "TechnoVortex", "This gives me Drive OST vibes. Absolute cinema",
-     [("SynthWave", "That's the biggest compliment you could give 🙏🏻"),
-      ("DemoUser",  "Just listened with headphones and my mind is blown")]),
-    ("Soul Voyage",  "MetroPhantom", "The chord progression on the bridge is elite. Clean mix too",
-     [("SoulSmoke", "Thank you bro, spent a week on that mix")]),
-    ("UK Drill Energy", "PhonkDealer", "The sample flip at the drop is cold. UK producers different",
-     [("BasslineKing", "We built different out here 💪"),
-      ("DemoUser",     "This goes hard in the whip no cap")]),
-    ("Hypnotic Pulse", "AfrobeatsLab", "Put this on at a house party last week, the floor went CRAZY",
-     [("TechnoVortex", "That's what I make it for 🔊 let's collab sometime")]),
-    ("Lagos Groove", "DemoUser", "Afrobeats need more producers like this. Pure vibes only",
-     [("AfrobeatsLab", "That means everything, thank you 🙏")]),
+    ("DRIVER", "DemoUser", "The C# Minor on this is haunting. Absolute cinema production 🎬",
+     [("ProducedByU", "Appreciate it, that's exactly the energy 🙏"),
+      ("FakeTech",      "Bro the mix on this is crazy clean")]),
+    ("Chemistry", "DemoUser", "This is exactly the late night study energy I needed. Pure jazz magic 🎷",
+     [("Jazzzed", "Glad it hit right, that's the vibe 🙏"),
+      ("ProducedByU", "The sample flip on this is cold")]),
+    ("IN THE RAIN", "YoungTiller", "The vocal chops on this are insane. Emotional and cinematic at the same time",
+     [("VocaVoice", "That's everything I was going for 🎤"),
+      ("DemoUser",  "Been on repeat all morning no cap")]),
+    ("Don't Be Shy", "DemoUser", "This dancehall energy is infectious. Smooth and melodic 🌴",
+     [("Swayy",        "Appreciate that, more vibes coming 🙏"),
+      ("TenTens",      "The groove on this is unreal")]),
+    ("Leave Me", "DaysNoTrace", "Rock on! Finally some raw emotional guitar-driven beats on here",
+     [("Swayy",    "Different lane but I respect the energy 💪"),
+      ("DemoUser", "This goes hard in the whip no cap")]),
+    ("Jasmine", "TenTens", "Put this on at a house party last week, the floor went CRAZY",
+     [("FakeTech", "That's what I make it for 🔊 let's collab sometime")]),
+    ("Don't Worry", "DemoUser", "Pure vibes all day, this is exactly what I needed 🌊",
+     [("TenTens", "Means everything, glad it hit right 🙏"),
+      ("ProducedByKyle", "The atmosphere on this is incredible")]),
+    ("In My Head", "ProducedByU", "Trap soul production is next level on this. Emotional and hard at the same time",
+     [("YoungTiller", "That's exactly the sound I was chasing 🎧"),
+      ("DemoUser",    "Been on repeat since yesterday no cap")]),
 ]
 
 
@@ -243,23 +291,7 @@ def seed():
             # Spread upload dates across the last month for algorithm freshness testing
             uploaded = now - timedelta(days=days_ago, hours=random.randint(0, 23))
 
-            # Remote audio needs permissive CORS headers so Web Audio can read it.
-            CORS_AUDIO = [
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/audio-analyser/viper.mp3",
-                "https://raw.githubusercontent.com/goldfire/howler.js/master/examples/player/audio/rave_digger.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/audio-basics/outfoxing.mp3",
-                "https://raw.githubusercontent.com/goldfire/howler.js/master/examples/player/audio/80s_vibe.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/multi-track/bassguitar.mp3",
-                "https://raw.githubusercontent.com/goldfire/howler.js/master/examples/player/audio/running_out.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/multi-track/drums.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/multi-track/leadguitar.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/multi-track/horns.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/multi-track/clav.mp3",
-                "https://raw.githubusercontent.com/mdn/webaudio-examples/main/audio-buffer-source-node/loop/rnb-lofi-melody-loop.wav",
-            ]
-            audio_url = CORS_AUDIO[BEATS.index(row) % len(CORS_AUDIO)]
-            # Keep baseline play counts low so scroll-triggered increments are visible in demos.
-            seeded_plays = random.randint(8, 18)
+            audio_url = AUDIO_PATHS[title]
 
             beat = Beat(
                 title=title,
@@ -272,7 +304,7 @@ def seed():
                 price=price,
                 premium_price=premium_price,
                 exclusive_price=exclusive_price,
-                play_count=seeded_plays,
+                play_count=plays,
                 is_trending=is_trending,
                 uploaded_at=uploaded,
                 producer_id=producer_objs[prod_idx].id,
@@ -298,7 +330,7 @@ def seed():
 
         # ── Seed follows — create a social graph ──
         for i, producer in enumerate(producer_objs):
-            # Each producer follows 2-4 other producers
+            # Each producer follows 3 other producers
             others = [p for j, p in enumerate(producer_objs) if j != i]
             for followed in random.sample(others, min(3, len(others))):
                 producer.follow(followed)
@@ -340,10 +372,17 @@ def seed():
 
         print("\nDatabase seeded successfully!")
         print("\n   Demo accounts:")
-        print("   demo@tunefeed.io    / password123  (listener)")
-        print("   metro@tunefeed.io   / password123  (MetroPhantom)")
-        print("   phonk@tunefeed.io   / password123  (PhonkDealer)")
-        print("   afro@tunefeed.io    / password123  (AfrobeatsLab)")
+        print("   demo@tunefeed.io             / password123  (listener)")
+        print("   prodbyu@tunefeed.io          / password123  (ProducedByU)")
+        print("   producedbykyle@tunefeed.io   / password123  (ProducedByKyle)")
+        print("   swayy@tunefeed.io            / password123  (Swayy)")
+        print("   vocavoice@tunefeed.io        / password123  (VocaVoice)")
+        print("   tentens@tunefeed.io          / password123  (TenTens)")
+        print("   jazzzed@tunefeed.io          / password123  (Jazzzed)")
+        print("   faketech@tunefeed.io         / password123  (FakeTech)")
+        print("   youngtiller@tunefeed.io      / password123  (YoungTiller)")
+        print("   daystrace@tunefeed.io        / password123  (DaysNoTrace)")
+        print("   velvet@tunefeed.io           / password123  (VelvetPeril)")
         print(f"\n   {len(BEATS)} beats across {len(set(b[2] for b in BEATS))} genres")
         print(f"   Likes, follows, and comments seeded for algorithm testing\n")
 
