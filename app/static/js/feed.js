@@ -36,6 +36,7 @@ const AudioVizState = {
   context: null,
   source: null,
   analyser: null,
+  gainNode: null,
   freqData: null,
   timeData: null,
 };
@@ -267,11 +268,20 @@ function ensureAudioVisualizer() {
     AudioVizState.timeData = new Uint8Array(AudioVizState.analyser.fftSize);
   }
 
+  if (!AudioVizState.gainNode) {
+    AudioVizState.gainNode = AudioVizState.context.createGain();
+    AudioVizState.gainNode.gain.value = 0.5;  // matches the volume slider's default value="50"
+  }
+
   if (!AudioVizState.source) {
     try {
       AudioVizState.source = AudioVizState.context.createMediaElementSource(audio);
+      // Analyser taps the raw source (pre-gain) so source loudness and user volume
+      // are independent — normalization sees the file's natural level, not the slider.
+      audio.volume = 1.0;
       AudioVizState.source.connect(AudioVizState.analyser);
-      AudioVizState.analyser.connect(AudioVizState.context.destination);
+      AudioVizState.source.connect(AudioVizState.gainNode);
+      AudioVizState.gainNode.connect(AudioVizState.context.destination);
     } catch (_) {
       return null;
     }
@@ -325,7 +335,8 @@ function syncTransportControls(beatId) {
   const duration = Number(audio?.duration || parseDurationToSeconds(meta.duration));
   const current = Number(audio?.currentTime || 0);
   const progress = duration > 0 ? (current / duration) * 100 : 0;
-  const volume = Math.round((Number(audio?.volume ?? 0.5)) * 100);
+  const gainVol = AudioVizState.gainNode?.gain.value;
+  const volume  = Math.round((gainVol ?? Number(audio?.volume ?? 0.5)) * 100);
 
   if (timeEl) timeEl.textContent = formatClock(current);
   if (durationEl) durationEl.textContent = formatClock(duration);
@@ -582,6 +593,7 @@ function drawWaveform(beatId, playing) {
   let t            = 0;
   let smoothedBass = 0;
   let smoothedRms  = 0;
+  let normPeak     = 1.20;  // start above NORM_TARGET so normalisation is active from frame 1
 
   // Inter-frame blend buffer: persists across rAF ticks, eliminates residual jitter
   const prevAmps = new Float32Array(NUM_PTS).fill(0);
@@ -670,13 +682,24 @@ function drawWaveform(beatId, playing) {
         // kick drum → smoothedBass surges → whole wave amplified up to ~3.8×
         const boost = 1.0 + smoothedBass * 2.8;
 
-        // Inter-frame temporal blend: new frame contributes 45%, previous 55%.
-        // This is an additional safety net on top of the analyser's own smoothing,
-        // ensuring no frame-to-frame jumps even if the browser throttles rAF.
+        // Source normalization: slow exponential attack on boostedMax so individual
+        // bass hits still punch through — only sustained loud content deflates normScale.
+        // Instant attack would collapse normScale on the very frame that should look biggest.
+        const NORM_ATK    = 0.04;
+        const NORM_DECAY  = 0.9985;
+        const NORM_TARGET = 0.70;
+        const boostedMax  = rawAmps.reduce((a, b) => Math.max(a, b), 0) * boost;
+        if (boostedMax > normPeak) normPeak += (boostedMax - normPeak) * NORM_ATK;
+        else normPeak *= NORM_DECAY;
+        const normScale = normPeak > NORM_TARGET ? NORM_TARGET / normPeak : 1.0;
+
+        // Volume multiplier: 0.12 at silence → 1.27 at 100 %, calibrated so that
+        // 50 % volume sits near half-height and 100 % fills the display on peaks.
+        const vol     = AudioVizState.gainNode?.gain.value ?? 1.0;
+        const volMult = 0.12 + vol * 1.15;
+
         for (let p = 0; p < NUM_PTS; p++) {
-          // Cap at 1.0: at 100 % volume prevAmps reaches 1.0 and the wave peak
-          // lands exactly EDGE_PADDING pixels from the canvas boundary (see below).
-          const target = Math.min(1.0, rawAmps[p] * boost);
+          const target = Math.min(1.0, rawAmps[p] * boost * normScale * volMult);
           prevAmps[p]  = prevAmps[p] * 0.55 + target * 0.45;
         }
 
@@ -1020,7 +1043,12 @@ function initPlayPauseButtons() {
     if (volume) {
       const beatId = Number(volume.dataset.beatId);
       if (!beatId) return;
-      audio.volume = Number(volume.value) / 100;
+      const vol = Number(volume.value) / 100;
+      if (AudioVizState.gainNode) {
+        AudioVizState.gainNode.gain.value = vol;
+      } else {
+        audio.volume = vol;
+      }
       volume.style.setProperty('--range-pct', volume.value);
       syncTransportControls(beatId);
     }
@@ -1677,7 +1705,7 @@ function appendBeatCard(beat) {
         ${beat.genre    ? `<span class="feed-tag">${escHtml(beat.genre)}</span>` : ''}
         ${beat.bpm      ? `<span class="feed-tag">${beat.bpm} BPM</span>` : ''}
         ${beat.key      ? `<span class="feed-tag">${escHtml(beat.key)}</span>` : ''}
-        ${beat.mood_tag ? `<span class="feed-tag feed-tag-mood">${escHtml(beat.mood_tag)}</span>` : ''}
+        ${beat.mood_tag ? beat.mood_tag.split(',').filter(t => t.trim()).map(t => `<span class="feed-tag feed-tag-mood">${escHtml(t.trim())}</span>`).join('') : ''}
       </div>
       ${pricingPanel}
     </div>
