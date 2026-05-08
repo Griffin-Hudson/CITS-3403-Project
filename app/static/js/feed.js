@@ -1705,7 +1705,7 @@ function appendBeatCard(beat) {
         ${beat.genre    ? `<span class="feed-tag">${escHtml(beat.genre)}</span>` : ''}
         ${beat.bpm      ? `<span class="feed-tag">${beat.bpm} BPM</span>` : ''}
         ${beat.key      ? `<span class="feed-tag">${escHtml(beat.key)}</span>` : ''}
-        ${beat.mood_tag ? beat.mood_tag.split(',').filter(t => t.trim()).map(t => `<span class="feed-tag feed-tag-mood">${escHtml(t.trim())}</span>`).join('') : ''}
+        ${beat.mood_tag ? beat.mood_tag.split(',').filter(t => t.trim() && t.trim().toLowerCase() !== (beat.genre || '').toLowerCase()).map(t => `<span class="feed-tag feed-tag-mood">${escHtml(t.trim())}</span>`).join('') : ''}
       </div>
       ${pricingPanel}
     </div>
