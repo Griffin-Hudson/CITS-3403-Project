@@ -15,7 +15,8 @@ from datetime import datetime, timedelta
 import random
 
 from app import create_app
-from app.models import db, User, Beat, Like, Comment
+from app.models import db, User, Beat, Like, Comment, Transaction
+from app.services.wallet_service import top_up, record_earning
 
 random.seed(42)
 
@@ -267,6 +268,8 @@ def seed():
         db.session.add(demo)
 
         # ── Create producers ──
+        # role='producer' here mirrors the upgrade routes.py performs on first upload —
+        # without it, seeded producers would still look like plain listeners.
         producer_objs = []
         for p in PRODUCERS:
             u = User(
@@ -274,6 +277,7 @@ def seed():
                 email=p["email"],
                 bio=p["bio"],
                 avatar_url=p["avatar_url"],
+                role='producer',
             )
             u.set_password(p["password"])
             db.session.add(u)
@@ -367,6 +371,26 @@ def seed():
                     created_at=now - timedelta(hours=random.randint(0, 48)),
                 )
                 db.session.add(reply)
+
+        # ── Seed wallet activity ──
+        # Demo listener: a couple of top-ups so the wallet page has activity to show.
+        for amount, days_ago in [(50, 12), (25, 5), (100, 1)]:
+            tx = top_up(demo, amount, note='Card ending 4242')
+            tx.created_at = now - timedelta(days=days_ago, hours=random.randint(0, 23))
+
+        # Producers: a handful of synthetic sales each so the studio page is meaningful.
+        # We only seed earnings for a subset of beats per producer to keep numbers varied.
+        for producer in producer_objs:
+            producer_beats = [b for b in beat_map.values() if b.producer_id == producer.id]
+            if not producer_beats:
+                continue
+            for beat in random.sample(producer_beats, min(len(producer_beats), 3)):
+                # 1-4 sales per featured beat at the beat's lease price
+                for _ in range(random.randint(1, 4)):
+                    tx = record_earning(producer, beat.price,
+                                        note=f'Sale: {beat.title}')
+                    tx.created_at = now - timedelta(days=random.randint(0, 25),
+                                                    hours=random.randint(0, 23))
 
         db.session.commit()
 

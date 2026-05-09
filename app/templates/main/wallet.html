@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Wallet — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wallet.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<div class="wallet-page">
+  <div class="wallet-container">
+
+    <header class="wallet-header">
+      <h1 class="wallet-title">Wallet</h1>
+      <p class="wallet-subtitle">Top up your balance and review your activity.</p>
+    </header>
+
+    <section class="wallet-grid">
+
+      {# ── Balance summary ── #}
+      <div class="wallet-card wallet-balance-card">
+        <div class="wallet-card-label">Available Balance</div>
+        <div class="wallet-balance-amount">${{ '%.2f' % (current_user.balance or 0) }}</div>
+        {% if current_user.role == 'producer' %}
+          <a class="wallet-card-link" href="{{ url_for('main.studio_earnings') }}">
+            <i class="bi bi-bar-chart-line"></i> View creator earnings
+          </a>
+        {% endif %}
+      </div>
+
+      {# ── Top-up form ── #}
+      <div class="wallet-card wallet-topup-card">
+        <div class="wallet-card-label">Top Up</div>
+        <form method="POST" class="wallet-topup-form" novalidate>
+          {{ form.hidden_tag() }}
+
+          <div class="wallet-amount-row">
+            <span class="wallet-currency">$</span>
+            <input id="amount" name="amount" type="number" min="1" max="10000" step="0.01"
+                   class="ts-input wallet-amount-input"
+                   placeholder="0.00"
+                   value="{{ form.amount.data or '' }}"
+                   required />
+          </div>
+
+          <div class="wallet-quick-amounts" role="group" aria-label="Quick top-up amounts">
+            {% for preset in [10, 25, 50, 100] %}
+              <button type="button" class="wallet-quick-btn" data-amount="{{ preset }}">${{ preset }}</button>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="btn-ts-primary wallet-topup-submit">
+            <i class="bi bi-plus-circle"></i> Add Funds
+          </button>
+        </form>
+      </div>
+    </section>
+
+    {# ── Transaction history ── #}
+    <section class="wallet-history">
+      <h2 class="wallet-section-title">Recent Activity</h2>
+
+      {% if transactions %}
+        <ul class="wallet-tx-list">
+          {% for tx in transactions %}
+            <li class="wallet-tx-row wallet-tx-{{ tx.type }}">
+              <div class="wallet-tx-icon">
+                {% if tx.type == 'topup' %}
+                  <i class="bi bi-arrow-down-circle"></i>
+                {% elif tx.type == 'purchase' %}
+                  <i class="bi bi-bag"></i>
+                {% else %}
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                {% endif %}
+              </div>
+              <div class="wallet-tx-meta">
+                <div class="wallet-tx-title">
+                  {% if tx.type == 'topup' %}Top Up
+                  {% elif tx.type == 'purchase' %}Purchase
+                  {% elif tx.type == 'refund' %}Refund
+                  {% else %}{{ tx.type|capitalize }}{% endif %}
+                </div>
+                {% if tx.note %}
+                  <div class="wallet-tx-note">{{ tx.note }}</div>
+                {% endif %}
+                <div class="wallet-tx-date">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</div>
+              </div>
+              <div class="wallet-tx-amount {% if tx.type == 'purchase' %}is-negative{% else %}is-positive{% endif %}">
+                {% if tx.type == 'purchase' %}-{% else %}+{% endif %}${{ '%.2f' % tx.amount }}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="wallet-empty">
+          <i class="bi bi-receipt"></i>
+          <p>No activity yet. Top up to get started.</p>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Quick-amount chips fill the amount input — saves typing for common values
+  document.querySelectorAll('.wallet-quick-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById('amount');
+      if (input) {
+        input.value = btn.dataset.amount;
+        input.focus();
+      }
+    });
+  });
+</script>
+{% endblock %}

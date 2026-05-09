@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Creator Earnings — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wallet.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<div class="wallet-page">
+  <div class="wallet-container">
+
+    <header class="wallet-header studio-header">
+      <div class="studio-eyebrow">CREATOR STUDIO</div>
+      <h1 class="wallet-title">Earnings</h1>
+      <p class="wallet-subtitle">
+        Lifetime income from your beats. More tools — payout schedule, revenue
+        curves and creator incentives — are coming soon.
+      </p>
+    </header>
+
+    {# ── Stat tiles ── #}
+    <section class="studio-stats">
+      <div class="studio-stat-card">
+        <div class="studio-stat-label">Lifetime Earnings</div>
+        <div class="studio-stat-value">${{ '%.2f' % (current_user.earnings or 0) }}</div>
+      </div>
+      <div class="studio-stat-card">
+        <div class="studio-stat-label">Wallet Balance</div>
+        <div class="studio-stat-value">${{ '%.2f' % (current_user.balance or 0) }}</div>
+        <a class="studio-stat-link" href="{{ url_for('main.wallet') }}">
+          Go to wallet <i class="bi bi-arrow-right-short"></i>
+        </a>
+      </div>
+      <div class="studio-stat-card">
+        <div class="studio-stat-label">Sales</div>
+        <div class="studio-stat-value">{{ sale_count }}</div>
+      </div>
+      <div class="studio-stat-card">
+        <div class="studio-stat-label">Avg Sale</div>
+        <div class="studio-stat-value">${{ '%.2f' % avg_sale }}</div>
+      </div>
+    </section>
+
+    {# ── Placeholder for future analytics surface ── #}
+    <section class="studio-coming-soon">
+      <i class="bi bi-graph-up-arrow"></i>
+      <div>
+        <div class="studio-coming-soon-title">Revenue analytics</div>
+        <div class="studio-coming-soon-sub">Daily charts and a payout calendar will live here.</div>
+      </div>
+    </section>
+
+    {# ── Earning history ── #}
+    <section class="wallet-history">
+      <h2 class="wallet-section-title">Sales History</h2>
+
+      {% if earnings %}
+        <ul class="wallet-tx-list">
+          {% for tx in earnings %}
+            <li class="wallet-tx-row wallet-tx-earning">
+              <div class="wallet-tx-icon">
+                <i class="bi bi-music-note-beamed"></i>
+              </div>
+              <div class="wallet-tx-meta">
+                <div class="wallet-tx-title">Sale</div>
+                {% if tx.note %}
+                  <div class="wallet-tx-note">{{ tx.note }}</div>
+                {% endif %}
+                <div class="wallet-tx-date">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</div>
+              </div>
+              <div class="wallet-tx-amount is-positive">
+                +${{ '%.2f' % tx.amount }}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="wallet-empty">
+          <i class="bi bi-cash-coin"></i>
+          <p>No sales yet. Keep uploading — your earnings will appear here.</p>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+{% endblock %}

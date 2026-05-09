@@ -44,6 +44,43 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('main.upload') }}" class="top-nav-upload-btn">Upload</a>
 
+        {# ── Balance chip (click to open menu, click amount to open wallet) ── #}
+        <div class="dropdown nav-balance-dropdown">
+          <button class="nav-balance-btn dropdown-toggle" type="button"
+                  data-bs-toggle="dropdown" aria-expanded="false"
+                  aria-label="Wallet menu">
+            <i class="bi bi-wallet2"></i>
+            <span class="nav-balance-amount">${{ '%.2f' % (current_user.balance or 0) }}</span>
+          </button>
+
+          <ul class="dropdown-menu dropdown-menu-end nav-balance-menu">
+            <li>
+              <a class="dropdown-item nav-balance-row" href="{{ url_for('main.wallet') }}">
+                <span class="nav-balance-row-label">
+                  <i class="bi bi-wallet2"></i> Balance
+                </span>
+                <span class="nav-balance-row-value">${{ '%.2f' % (current_user.balance or 0) }}</span>
+              </a>
+            </li>
+            {% if current_user.role == 'producer' %}
+              <li>
+                <a class="dropdown-item nav-balance-row" href="{{ url_for('main.studio_earnings') }}">
+                  <span class="nav-balance-row-label">
+                    <i class="bi bi-bar-chart-line"></i> Earnings
+                  </span>
+                  <span class="nav-balance-row-value">${{ '%.2f' % (current_user.earnings or 0) }}</span>
+                </a>
+              </li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item nav-balance-action" href="{{ url_for('main.wallet') }}">
+                <i class="bi bi-plus-circle"></i> Top Up
+              </a>
+            </li>
+          </ul>
+        </div>
+
         <div class="dropdown nav-profile-dropdown">
           <button class="nav-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="nav-profile-avatar">
