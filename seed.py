@@ -153,63 +153,61 @@ AUDIO_PATHS = {
 }
 
 BEATS = [
-    # (title, prod, genre, bpm, key, mood, dur, licence, lease, premium, excl, plays, trending, days_ago)
-
     # ── ProducedByU — Trap ───────────────────────────────────────────────────
     ("DRIVER",    0, "Trap", 130, "C# Min", "dark,melodic,cinematic",            "3:00", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
     ("THE CITY",  0, "Trap", 126, "C# Min", "atmospheric,smooth,moody",          "3:10", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
     ("POISON",    0, "Trap", 136, "C# Min", "eerie,emotional,melodic",           "2:50", "Non-exclusive",  24.99,  64.99, 249.99,    9, False,  2),
-    ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,distorted,energetic","3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
+    ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,energetic",         "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
 
     # ── ProducedByKyle — (beats coming) ──────────────────────────────────────
 
     # ── Swayy — Dancehall ────────────────────────────────────────────────────
-    ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "dancehall,smooth,melodic",     "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
-    ("Reflection",     2, "Dancehall", 100, "G# Min", "tropical,emotional,melodic",   "3:15", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
-    ("Psyched",        2, "Dancehall", 140, "A Min",  "psychedelic,atmospheric,melodic","3:00","Non-exclusive", 22.99,  54.99, 219.99,    8, False,  3),
-    ("ROLLERCOASTER",  2, "Dancehall", 137, "B Min",  "energetic,bouncy,uplifting",   "2:55", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+    ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "tropical,smooth,melodic",          "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Reflection",     2, "Dancehall", 100, "G# Min", "tropical,emotional,melodic",       "3:15", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
+    ("Psyched",        2, "Dancehall", 140, "A Min",  "psychedelic,atmospheric,melodic",  "3:00", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
+    ("ROLLERCOASTER",  2, "Dancehall", 137, "B Min",  "energetic,bouncy,uplifting",       "2:55", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
 
     # ── VocaVoice — Vocal Sample ─────────────────────────────────────────────
-    ("IN THE RAIN",       3, "Trap",    154, "G Min",  "emotional,vocal sample,cinematic",   "3:05", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
-    ("Angels Singing",    3, "R&B",     106, "F# Min", "soulful,uplifting,melodic",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
-    ("Feelings",          3, "Soul",     96, "F Min",  "sad,emotional,minimal",              "2:45", "Non-exclusive",  16.99,  39.99, 159.99,    7, False,  6),
-    ("ABUNDANT IN MERCY", 3, "Gospel",  140, "F# Min", "gospel,soulful,uplifting,cinematic", "3:15", "Non-exclusive",  22.99,  54.99, 219.99,    9, False,  2),
+    ("IN THE RAIN",        3, "Trap",    154, "G Min",  "emotional,cinematic,atmospheric",    "3:05", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
+    ("Angels Singing",     3, "R&B",     106, "F# Min", "soulful,uplifting,melodic",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Feelings",           3, "Soul",     96, "F Min",  "sad,emotional,minimal",              "2:45", "Non-exclusive",  16.99,  39.99, 159.99,    7, False,  6),
+    ("ABUNDANT IN MERCY", 3, "Gospel",  140, "F# Min", "soulful,uplifting,cinematic",        "3:15", "Non-exclusive",  22.99,  54.99, 219.99,    9, False,  2),
 
     # ── TenTens — Afrobeat ───────────────────────────────────────────────────
-    ("Don't Worry",     4, "Afrobeat",  104, "Gb Maj", "chill,uplifting,smooth,atmospheric",  "3:20", "Non-exclusive",  18.99,  44.99, 179.99,   10, False,  2),
-    ("Me & You",        4, "Afrobeat",   98, "F Min",  "chill,emotional,melodic,nocturnal",   "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
-    ("Rosas",           4, "Afrobeat",   96, "G Min",  "chill,tropical,smooth,warm",          "3:25", "Non-exclusive",  19.99,  44.99, 179.99,    8, False,  4),
-    ("All My Trust",    4, "Afrobeat",  128, "C Min",  "energetic,rhythmic,melodic,vibrant",  "3:10", "Non-exclusive",  22.99,  54.99, 219.99,   11, True,   1),
+    ("Don't Worry",     4, "Afrobeat",  104, "Gb Maj", "chill,uplifting,atmospheric",         "3:20", "Non-exclusive",  18.99,  44.99, 179.99,   10, False,  2),
+    ("Me & You",        4, "Afrobeat",   98, "F Min",  "chill,emotional,nocturnal",           "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
+    ("Rosas",           4, "Afrobeat",   96, "G Min",  "chill,tropical,warm",                 "3:25", "Non-exclusive",  19.99,  44.99, 179.99,    8, False,  4),
+    ("All My Trust",    4, "Afrobeat",  128, "C Min",  "energetic,rhythmic,vibrant",          "3:10", "Non-exclusive",  22.99,  54.99, 219.99,   11, True,   1),
 
     # ── Jazzzed — Jazz / Boom Bap ────────────────────────────────────────────
-    ("Chemistry",   5, "Jazz",     123, "Eb Min", "chill,jazzy,smooth",            "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  2),
+    ("Chemistry",   5, "Jazz",     123, "Eb Min", "chill,smooth,laid-back",        "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  2),
     ("CALL ME",     5, "Jazz",      98, "F# Min", "nostalgic,soulful,retro",       "2:55", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
-    ("BALANCE",     5, "Boom Bap",  87, "G Min",  "boom bap,jazzy,laid-back",      "3:00", "Non-exclusive",  17.99,  44.99, 179.99,    8, True,   1),
+    ("BALANCE",     5, "Boom Bap",  87, "G Min",  "laid-back,smooth,chill",        "3:00", "Non-exclusive",  17.99,  44.99, 179.99,    8, True,   1),
     ("Shy2",        5, "Jazz",     132, "C# Min", "melodic,atmospheric,smooth",    "2:50", "Non-exclusive",  22.99,  54.99, 219.99,    6, False,  5),
 
     # ── FakeTech — Electronic ────────────────────────────────────────────────
-    ("Boombox",   6, "Electronic", 195, "F# Min", "aggressive,bass-heavy,club",       "2:50", "Non-exclusive",  24.99,  59.99, 229.99,    8, False,  2),
-    ("Spin",      6, "Electronic", 104, "F Min",  "dark,rhythmic,bounce",              "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  5),
+    ("Boombox",   6, "Electronic", 195, "F# Min", "aggressive,bass-heavy,club",        "2:50", "Non-exclusive",  24.99,  59.99, 229.99,    8, False,  2),
+    ("Spin",      6, "Electronic", 104, "F Min",  "dark,rhythmic,bounce",             "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  5),
     ("Jasmine",   6, "Electronic", 105, "F# Min", "melodic,atmospheric,hypnotic",     "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
     ("Camomile",  6, "Electronic", 118, "G# Min", "dreamy,nostalgic,atmospheric",     "3:20", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
 
     # ── YoungTiller — R&B ────────────────────────────────────────────────────
-    ("In My Head",   7, "R&B",  98, "F Min",  "late night,melodic,smooth,atmospheric",  "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
-    ("One Night",    7, "R&B",  90, "F# Min", "smooth,atmospheric,nocturnal,emotional", "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    6, False,  6),
-    ("Mind Games",   7, "R&B", 135, "Bb Min", "dark,emotional,melodic,moody",           "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    9, True,   2),
-    ("I Know",       7, "R&B",  80, "Gb Min", "slow,intimate,moody,ambient",            "3:30", "Premium Lease",  19.99,  49.99, 199.99,    5, False,  8),
+    ("In My Head",   7, "R&B",  98, "F Min",  "late night,smooth,atmospheric",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("One Night",    7, "R&B",  90, "F# Min", "atmospheric,nocturnal,emotional",        "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    6, False,  6),
+    ("Mind Games",   7, "R&B", 135, "Bb Min", "dark,emotional,moody",                   "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    9, True,   2),
+    ("I Know",       7, "R&B",  80, "Gb Min", "intimate,moody,ambient",                 "3:30", "Premium Lease",  19.99,  49.99, 199.99,    5, False,  8),
 
     # ── DaysNoTrace — Alternative Rock ───────────────────────────────────────
-    ("No More Pain",              8, "Alternative Rock", 195, "F# Min", "alternative rock,emotional,aggressive,intense",   "3:00", "Non-exclusive",  24.99,  64.99, 249.99,    6, False,  3),
-    ("Unbroken",                  8, "Alternative Rock", 130, "C Min",  "alternative rock,sad,emotional,dark",             "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
-    ("Too Late",                  8, "Alternative Rock", 148, "C Min",  "alternative rock,melancholic,heavy,emotional",    "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
-    ("Leave Me",                  8, "Alternative Rock", 140, "A Min",  "alternative rock,sad,emotional,dark",             "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
+    ("No More Pain",              8, "Alternative Rock", 195, "F# Min", "emotional,aggressive,intense",                   "3:00", "Non-exclusive",  24.99,  64.99, 249.99,    6, False,  3),
+    ("Unbroken",                  8, "Alternative Rock", 130, "C Min",  "sad,emotional,dark",                              "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Too Late",                  8, "Alternative Rock", 148, "C Min",  "melancholic,heavy,emotional",                     "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
+    ("Leave Me",                  8, "Alternative Rock", 140, "A Min",  "sad,emotional,dark",                              "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
 
     # ── VelvetPeril — Indie Rock ─────────────────────────────────────────────
-    ("Last Summer",          9, "Indie Rock", 114, "B Min",  "indie rock,melancholic,guitar,emotional",    "3:30", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
-    ("Summer Girl",          9, "Indie Rock", 163, "Ab Min", "indie rock,upbeat,emotional,summer vibe",    "2:58", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
-    ("Overdue",              9, "Indie Rock", 176, "Eb Maj", "indie rock,fast tempo,emotional,atmospheric","3:05", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
-    ("Endings",              9, "Indie Rock", 171, "D Min",  "indie rock,cinematic,emotional,ambient",     "3:20", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
+    ("Last Summer",          9, "Indie Rock", 114, "B Min",  "melancholic,guitar,emotional",               "3:30", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Summer Girl",          9, "Indie Rock", 163, "Ab Min", "upbeat,emotional,summer vibe",               "2:58", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+    ("Overdue",              9, "Indie Rock", 176, "Eb Maj", "driven,emotional,atmospheric",               "3:05", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
+    ("Endings",              9, "Indie Rock", 171, "D Min",  "cinematic,emotional,ambient",                "3:20", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
 ]
 
 # ---------------------------------------------------------------------------
