@@ -1,14 +1,11 @@
-"""Wallet operations — keep balance/earnings updates and ledger writes in one place
-so callers can't accidentally update a user's funds without recording a Transaction."""
+"""Wallet operations — keeps balance/earnings updates and ledger writes together
+so callers can't update a user's funds without recording a Transaction."""
 
 from app.models import db, Transaction
 
 
 def top_up(user, amount, note=None):
-    """Add `amount` to the user's wallet balance and record a topup transaction.
-
-    Returns the created Transaction. Does not commit — caller controls the txn boundary.
-    """
+    """Add `amount` to the user's wallet balance and record a topup transaction."""
     user.balance = (user.balance or 0.0) + amount
     tx = Transaction(
         user_id=user.id,
@@ -22,11 +19,7 @@ def top_up(user, amount, note=None):
 
 
 def record_purchase(user, amount, note=None):
-    """Deduct `amount` from the user's balance and record a purchase transaction.
-
-    Returns the created Transaction. Caller controls commit and is responsible
-    for checking the user has enough balance before calling.
-    """
+    """Deduct `amount` from the user's balance and record a purchase transaction."""
     user.balance = (user.balance or 0.0) - amount
     tx = Transaction(
         user_id=user.id,
@@ -40,11 +33,7 @@ def record_purchase(user, amount, note=None):
 
 
 def record_earning(producer, amount, note=None):
-    """Credit `amount` to a producer's lifetime earnings AND wallet balance,
-    then record an earning transaction.
-
-    Returns the created Transaction. Caller controls commit.
-    """
+    """Credit `amount` to a producer's lifetime earnings and wallet balance."""
     producer.earnings = (producer.earnings or 0.0) + amount
     producer.balance = (producer.balance or 0.0) + amount
     tx = Transaction(
