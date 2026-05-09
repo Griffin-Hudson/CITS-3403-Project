@@ -87,10 +87,14 @@ class EditProfileForm(FlaskForm):
     submit = SubmitField('Save Bio')
 
 
+MIN_TOPUP = 1.0
+MAX_TOPUP = 10_000.0
+
+
 class TopUpForm(FlaskForm):
-    """Wallet top-up form. Caps single top-up at $10,000 to keep demo numbers sane."""
+    """Wallet top-up form."""
     amount = FloatField('Amount', validators=[
         DataRequired(),
-        NumberRange(min=1, max=10000, message='Amount must be between $1 and $10,000.'),
+        NumberRange(min=MIN_TOPUP, max=MAX_TOPUP, message=f'Amount must be between ${MIN_TOPUP:.0f} and ${MAX_TOPUP:,.0f}.'),
     ])
     submit = SubmitField('Top Up')

@@ -377,6 +377,7 @@ def wallet():
             top_up(current_user, amount, note='Wallet top-up')
             db.session.commit()
         except Exception:
+            logger.error('Wallet top-up failed for user %s', current_user.id, exc_info=True)
             db.session.rollback()
             flash('Top-up failed. Please try again.', 'danger')
             return redirect(url_for('main.wallet'))
