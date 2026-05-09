@@ -47,9 +47,7 @@ class User(UserMixin, db.Model):
     avatar_url    = db.Column(db.String(256), nullable=True)
     created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
 
-    # Wallet balance (top-ups minus spending). Earnings is the lifetime total
-    # credited to producers from sales — kept separate so the user can see
-    # creator income at a glance without recomputing it from transactions.
+    # earnings tracks lifetime producer income separately from spendable balance
     balance       = db.Column(db.Float, nullable=False, default=0.0)
     earnings      = db.Column(db.Float, nullable=False, default=0.0)
 
@@ -321,11 +319,6 @@ class CommentReport(db.Model):
 class Transaction(db.Model):
     __tablename__ = 'transaction'
 
-    # type values:
-    #   'topup'    — user added funds to their wallet
-    #   'purchase' — user spent funds buying a beat
-    #   'earning'  — producer received funds from a sale of one of their beats
-    #   'refund'   — funds returned to user (reserved for future use)
     TYPE_TOPUP    = 'topup'
     TYPE_PURCHASE = 'purchase'
     TYPE_EARNING  = 'earning'
