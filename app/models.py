@@ -47,9 +47,18 @@ class User(UserMixin, db.Model):
     avatar_url    = db.Column(db.String(256), nullable=True)
     created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
 
-    beats     = db.relationship('Beat',     back_populates='producer', lazy='dynamic')
-    likes     = db.relationship('Like',     back_populates='user',     lazy='dynamic')
-    purchases = db.relationship('Purchase', back_populates='buyer',    lazy='dynamic')
+    # Wallet balance (top-ups minus spending). Earnings is the lifetime total
+    # credited to producers from sales — kept separate so the user can see
+    # creator income at a glance without recomputing it from transactions.
+    balance       = db.Column(db.Float, nullable=False, default=0.0)
+    earnings      = db.Column(db.Float, nullable=False, default=0.0)
+
+    beats        = db.relationship('Beat',        back_populates='producer', lazy='dynamic')
+    likes        = db.relationship('Like',        back_populates='user',     lazy='dynamic')
+    purchases    = db.relationship('Purchase',    back_populates='buyer',    lazy='dynamic')
+    transactions = db.relationship('Transaction', back_populates='user',     lazy='dynamic',
+                                   cascade='all, delete-orphan',
+                                   order_by='Transaction.created_at.desc()')
 
     liked_comments = db.relationship(
         'Comment', secondary=comment_likes,
@@ -303,6 +312,37 @@ class CommentReport(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint('comment_id', 'user_id', name='unique_report'),)
+
+
+# ---------------------------------------------------------------------------
+# Transaction  (wallet ledger: top-ups, purchases, earnings)
+# ---------------------------------------------------------------------------
+
+class Transaction(db.Model):
+    __tablename__ = 'transaction'
+
+    # type values:
+    #   'topup'    — user added funds to their wallet
+    #   'purchase' — user spent funds buying a beat
+    #   'earning'  — producer received funds from a sale of one of their beats
+    #   'refund'   — funds returned to user (reserved for future use)
+    TYPE_TOPUP    = 'topup'
+    TYPE_PURCHASE = 'purchase'
+    TYPE_EARNING  = 'earning'
+    TYPE_REFUND   = 'refund'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    type           = db.Column(db.String(16), nullable=False, index=True)
+    amount         = db.Column(db.Float, nullable=False)
+    balance_after  = db.Column(db.Float, nullable=False)
+    note           = db.Column(db.String(256), nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship('User', back_populates='transactions')
+
+    def __repr__(self):
+        return f'<Transaction {self.type} {self.amount}>'
 
 
 # ---------------------------------------------------------------------------

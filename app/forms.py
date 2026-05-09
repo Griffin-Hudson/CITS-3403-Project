@@ -85,3 +85,12 @@ class EditProfileForm(FlaskForm):
     """Profile edit form (bio text only)."""
     bio = TextAreaField('Bio', validators=[Optional(), Length(max=300)])
     submit = SubmitField('Save Bio')
+
+
+class TopUpForm(FlaskForm):
+    """Wallet top-up form. Caps single top-up at $10,000 to keep demo numbers sane."""
+    amount = FloatField('Amount', validators=[
+        DataRequired(),
+        NumberRange(min=1, max=10000, message='Amount must be between $1 and $10,000.'),
+    ])
+    submit = SubmitField('Top Up')

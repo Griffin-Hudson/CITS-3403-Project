@@ -10,9 +10,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import limiter
-from app.forms import SignupForm, LoginForm, UploadBeatForm, EditProfileForm
-from app.models import db, User, Beat, Like, saved_beats, follows
+from app.forms import SignupForm, LoginForm, UploadBeatForm, EditProfileForm, TopUpForm
+from app.models import db, User, Beat, Like, Transaction, saved_beats, follows
 from app.services.feed_service import get_feed_beats
+from app.services.wallet_service import top_up
 
 main = Blueprint('main', __name__)
 
@@ -364,6 +365,54 @@ def follow(user_id):
     if referrer and urlsplit(referrer).netloc not in ('', request.host):
         referrer = ''
     return redirect(referrer or url_for('main.feed'))
+
+
+@main.route('/wallet', methods=['GET', 'POST'])
+@login_required
+def wallet():
+    form = TopUpForm()
+    if form.validate_on_submit():
+        amount = round(float(form.amount.data), 2)
+        try:
+            top_up(current_user, amount, note='Wallet top-up')
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Top-up failed. Please try again.', 'danger')
+            return redirect(url_for('main.wallet'))
+        flash(f'Added ${amount:.2f} to your balance.', 'success')
+        return redirect(url_for('main.wallet'))
+
+    if form.errors:
+        for _field, errors in form.errors.items():
+            for error in errors:
+                flash(error, 'danger')
+
+    transactions = (current_user.transactions
+                    .filter(Transaction.type.in_([Transaction.TYPE_TOPUP,
+                                                  Transaction.TYPE_PURCHASE,
+                                                  Transaction.TYPE_REFUND]))
+                    .limit(50).all())
+    return render_template('main/wallet.html', form=form, transactions=transactions)
+
+
+@main.route('/studio/earnings')
+@login_required
+def studio_earnings():
+    if current_user.role != 'producer':
+        flash('Upload your first beat to unlock the creator studio.', 'info')
+        return redirect(url_for('main.upload'))
+
+    earning_txs = (current_user.transactions
+                   .filter(Transaction.type == Transaction.TYPE_EARNING)
+                   .limit(100).all())
+    # Show simple aggregate stats so the page is useful even before charts/calendar land
+    sale_count = len(earning_txs)
+    avg_sale = (sum(t.amount for t in earning_txs) / sale_count) if sale_count else 0.0
+    return render_template('main/studio_earnings.html',
+                           earnings=earning_txs,
+                           sale_count=sale_count,
+                           avg_sale=avg_sale)
 
 
 @main.route('/search')
