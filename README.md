@@ -28,7 +28,7 @@
 | UWA ID | Name | GitHub Username |
 |---|---|---|
 | 24274489 | Griffin Hudson | Griffin-Hudson |
-| 24527669 | Tinashe Nemacha |  |
+| 24527669 | Tinashe Nemacha | tnemz |
 | 24339064 | Saiyang Seo | seosy218-ops |
 
 ## How to Run
