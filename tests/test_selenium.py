@@ -281,7 +281,11 @@ class TestNavigationButtons(_SeleniumBase):
             register_links,
             'Login page must contain an auth-switch link pointing to /register',
         )
-        register_links[0].click()
+        link = register_links[0]
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", link
+        )
+        link.click()
         wait.until(EC.url_contains('/register'))
         self.assertIn('/register', self.driver.current_url)
 
@@ -289,10 +293,14 @@ class TestNavigationButtons(_SeleniumBase):
         """The 'Sign In' link on the register page must return to /login."""
         self.driver.get(_HOST + '/register')
         wait = WebDriverWait(self.driver, _WAIT)
-        link = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.auth-switch-link')))
+        link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.auth-switch-link')))
         self.assertIn(
             '/login', link.get_attribute('href'),
             'Register page must contain an auth-switch link pointing to /login',
+        )
+        # Scroll to center so the link isn't cut off at the viewport boundary
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", link
         )
         link.click()
         wait.until(EC.url_contains('/login'))
