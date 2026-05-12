@@ -12,3 +12,4 @@ python-dotenv==1.2.1
 
 # Testing
 pytest==8.3.5
+selenium==4.27.1
