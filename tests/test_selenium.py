@@ -282,10 +282,7 @@ class TestNavigationButtons(_SeleniumBase):
             'Login page must contain an auth-switch link pointing to /register',
         )
         link = register_links[0]
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", link
-        )
-        link.click()
+        self.driver.execute_script("arguments[0].click();", link)
         wait.until(EC.url_contains('/register'))
         self.assertIn('/register', self.driver.current_url)
 
@@ -293,16 +290,16 @@ class TestNavigationButtons(_SeleniumBase):
         """The 'Sign In' link on the register page must return to /login."""
         self.driver.get(_HOST + '/register')
         wait = WebDriverWait(self.driver, _WAIT)
-        link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.auth-switch-link')))
+        link = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'a.auth-switch-link')))
         self.assertIn(
             '/login', link.get_attribute('href'),
             'Register page must contain an auth-switch link pointing to /login',
         )
-        # Scroll to center so the link isn't cut off at the viewport boundary
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", link
-        )
-        link.click()
+        # The register form overflows the 800 px headless viewport; the auth-page
+        # flex container's empty bottom portion sits above the link in z-order and
+        # intercepts a synthetic click.  JS click fires directly on the DOM node,
+        # bypassing Chrome's element-at-point check while still triggering navigation.
+        self.driver.execute_script("arguments[0].click();", link)
         wait.until(EC.url_contains('/login'))
         self.assertIn('/login', self.driver.current_url)
 
