@@ -1,0 +1,104 @@
+name: Application Tests
+
+# Run on every push and on every pull request targeting main.
+# A pull request that fails any job cannot be merged (configure branch
+# protection in GitHub Settings → Branches → main → Required status checks).
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1 — Unit tests
+  # Uses Python unittest with an in-memory SQLite database.
+  # These are fast (<5 s) and run on every push.
+  # ──────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests (unittest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        env:
+          SECRET_KEY: "ci-unit-test-secret-key-do-not-use-in-production"
+          FLASK_DEBUG: "false"
+        run: |
+          python -m unittest tests.test_models -v
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2 — Integration tests
+  # Uses pytest against Flask's test client with an in-memory SQLite database.
+  # Covers auth flows, route status codes, and JSON API behaviour.
+  # ──────────────────────────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests (pytest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run integration tests
+        env:
+          SECRET_KEY: "ci-integration-test-secret-key-do-not-use-in-production"
+          FLASK_DEBUG: "false"
+        run: |
+          pytest tests/test_auth.py tests/test_routes.py tests/test_api.py -v
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 3 — System tests (Selenium WebDriver)
+  # Runs a real Flask server in a background thread and drives Chrome in
+  # headless mode to test end-to-end user stories.
+  # ubuntu-latest includes Google Chrome; Selenium 4.x downloads chromedriver
+  # automatically, so no manual driver installation is required.
+  # ──────────────────────────────────────────────────────────────────────────
+  system-tests:
+    name: System Tests (Selenium)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run system tests
+        env:
+          SECRET_KEY: "ci-system-test-secret-key-do-not-use-in-production"
+          FLASK_DEBUG: "false"
+        run: |
+          python -m unittest tests.test_selenium -v
