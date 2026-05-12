@@ -4,6 +4,7 @@ from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -13,6 +14,7 @@ from app.config import Config
 login_manager = LoginManager()
 csrf = CSRFProtect()
 limiter = Limiter(key_func=get_remote_address, default_limits=[])
+migrate = Migrate()
 
 
 @event.listens_for(Engine, 'connect')
@@ -37,6 +39,7 @@ def create_app(config_class=Config):
     # models.py imports nothing from app/, so keeping db there breaks the cycle
     from app.models import db
     db.init_app(app)
+    migrate.init_app(app, db)
 
     login_manager.init_app(app)
     login_manager.login_view = 'main.login'       # redirect target when @login_required fails
@@ -75,8 +78,5 @@ def create_app(config_class=Config):
     @app.errorhandler(500)
     def server_error(e):
         return render_template('errors/500.html'), 500
-
-    with app.app_context():
-        db.create_all()  # create missing tables on startup; no-op if tables already exist
 
     return app
