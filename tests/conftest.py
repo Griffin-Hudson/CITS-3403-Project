@@ -52,4 +52,4 @@ def login(client, email='test@example.com', password='testpass'):
 
 
 def logout(client):
-    return client.get('/logout', follow_redirects=True)
+    return client.post('/logout', follow_redirects=True)

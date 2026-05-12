@@ -27,6 +27,28 @@ MAX_UPLOAD_SIZE_MB = 5
 MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 5 MB
 
 
+def _safe_redirect_target(target, request_host=''):
+    """Allow only same-site redirect targets or root-relative paths."""
+    if not target:
+        return ''
+
+    split = urlsplit(target)
+    if split.scheme:
+        if request_host and split.scheme in ('http', 'https') and split.netloc == request_host:
+            return target
+        return ''
+
+    if split.netloc:
+        if request_host and split.netloc == request_host:
+            return target
+        return ''
+
+    if split.path and not split.path.startswith('/'):
+        return ''
+
+    return target
+
+
 def _random_avataaars_avatar_url():
     """Generate a randomized avataaars avatar URL with consistent background color."""
     seed = quote(token_hex(12))
@@ -85,10 +107,7 @@ def login():
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember.data)
             flash('Logged in successfully.', 'success')
-            next_page = request.args.get('next', '')
-            # Guard against open-redirect: only allow relative URLs (no scheme or netloc)
-            if next_page and urlsplit(next_page).netloc:
-                next_page = ''
+            next_page = _safe_redirect_target(request.args.get('next', ''), request.host)
             return redirect(next_page or url_for('main.feed'))
         logger.warning('Failed login attempt for email: %s', form.email.data)
         flash('Invalid email or password.', 'danger')
@@ -136,7 +155,7 @@ def register():
     return render_template('auth/register.html', form=form)
 
 
-@main.route('/logout')
+@main.route('/logout', methods=['POST'])
 @login_required
 def logout():
     logout_user()
@@ -361,9 +380,7 @@ def follow(user_id):
         current_user.follow(user)
         db.session.commit()
         flash(f'Now following {user.username}.', 'success')
-    referrer = request.referrer or ''
-    if referrer and urlsplit(referrer).netloc not in ('', request.host):
-        referrer = ''
+    referrer = _safe_redirect_target(request.referrer or '', request.host)
     return redirect(referrer or url_for('main.feed'))
 
 

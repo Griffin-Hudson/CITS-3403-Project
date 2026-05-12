@@ -84,12 +84,10 @@ class TestLogin:
 class TestLogout:
     def test_logout_redirects_to_login(self, client, seeded_db):
         login(client)
-        r = client.get('/logout', follow_redirects=False)
+        r = client.post('/logout', follow_redirects=False)
         assert r.status_code == 302
         assert '/login' in r.headers.get('Location', '')
 
-    def test_logout_requires_login(self, client):
-        # Without an active session, /logout should redirect to login (not 500)
+    def test_logout_get_not_allowed(self, client):
         r = client.get('/logout', follow_redirects=False)
-        assert r.status_code == 302
-        assert '/login' in r.headers.get('Location', '')
+        assert r.status_code == 405
