@@ -47,27 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* ── 2. Password visibility toggle ─────────────────────────
-     Switches the input type between "password" (masked) and
-     "text" (visible). The icon swaps between bi-eye and
-     bi-eye-slash to reflect the current state.
-     ─────────────────────────────────────────────────────────── */
-  const toggle = document.querySelector(".password-toggle");
-  if (toggle) {
-    toggle.addEventListener("click", () => {
-      const input   = document.getElementById("password");
-      const icon    = toggle.querySelector("i");
-      const isHidden = input.type === "password";
-
-      input.type = isHidden ? "text" : "password";  // toggle between masked and visible
-
-      // Swap icon: eye = currently visible (can hide), eye-slash = currently hidden (can show)
-      icon.classList.toggle("bi-eye",       !isHidden);
-      icon.classList.toggle("bi-eye-slash",  isHidden);
-    });
-  }
-
-  /* ── 3. Demo credential auto-fill ──────────────────────────
+  /* ── 2. Demo credential auto-fill ──────────────────────────
      Each demo button stores credentials in data-email and
      data-password attributes. Clicking fills the login form
      fields and clears any stale validation state so the user
@@ -90,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ── 4. Flash alert dismiss ─────────────────────────────────
+  /* ── 3. Flash alert dismiss ─────────────────────────────────
      Close buttons inside flash alerts remove their parent
      element from the DOM entirely.
      ─────────────────────────────────────────────────────────── */
@@ -100,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ── 5. Password requirement live feedback (register page) ──
+  /* ── 4. Password requirement live feedback (register page) ──
      Mirrors the server-side rules in app/forms.py:SignupForm so
      the user gets instant feedback as they type. The submit
      handler relies on setCustomValidity() to keep the password

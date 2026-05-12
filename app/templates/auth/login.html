@@ -42,15 +42,8 @@
 
       <div class="ts-form-group">
         <label class="form-label" for="password">Password</label>
-        {# password-wrapper provides relative positioning for the absolute-placed toggle button #}
-        <div class="password-wrapper">
-          <input id="password" name="password" type="password" class="ts-input" placeholder="••••••••"
-                 required aria-required="true" aria-describedby="password-feedback" />
-          {# type="button" prevents this from accidentally submitting the form #}
-          <button type="button" class="password-toggle" aria-label="Toggle password visibility">
-            <i class="bi bi-eye"></i>
-          </button>
-        </div>
+        <input id="password" name="password" type="password" class="ts-input" placeholder="••••••••"
+               required aria-required="true" aria-describedby="password-feedback" />
         <div class="invalid-feedback" id="password-feedback">Password is required.</div>
       </div>
 

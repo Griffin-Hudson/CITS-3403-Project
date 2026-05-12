@@ -55,17 +55,10 @@
 
       <div class="ts-form-group">
         <label class="form-label" for="password">Password</label>
-        {# password-wrapper provides relative positioning for the absolute toggle button #}
-        <div class="password-wrapper">
-          <input id="password" name="password" type="password" class="ts-input"
-                 placeholder="••••••••" required minlength="8" maxlength="128"
-                 autocomplete="new-password"
-                 aria-describedby="password-help password-feedback" />
-          {# type="button" prevents accidental form submission when clicking the eye icon #}
-          <button type="button" class="password-toggle" aria-label="Toggle password visibility">
-            <i class="bi bi-eye"></i>
-          </button>
-        </div>
+        <input id="password" name="password" type="password" class="ts-input"
+               placeholder="••••••••" required minlength="8" maxlength="128"
+               autocomplete="new-password"
+               aria-describedby="password-help password-feedback" />
         {# Live requirement checklist — JS toggles .met (green ✓) and .unmet (amber ✗) #}
         <ul id="password-help" class="password-requirements" aria-live="polite">
           <li class="password-requirements-title">Your password must include:</li>
