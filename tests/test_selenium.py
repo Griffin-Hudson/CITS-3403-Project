@@ -212,8 +212,11 @@ class _SeleniumBase(unittest.TestCase):
         wait.until(EC.url_changes(_HOST + '/login'))
 
     def _logout(self):
-        """Navigate directly to /logout and wait for the redirect to /login."""
-        self.driver.get(_HOST + '/logout')
+        """Submit the logout form and wait for the redirect to /login."""
+        signout = WebDriverWait(self.driver, _WAIT).until(
+            EC.presence_of_element_located((By.ID, 'nav-signout'))
+        )
+        self.driver.execute_script("arguments[0].click();", signout)
         WebDriverWait(self.driver, _WAIT).until(EC.url_contains('/login'))
 
 
@@ -343,13 +346,18 @@ class TestLoginFlow(_SeleniumBase):
         )
 
     def test_authenticated_nav_exposes_signout_link(self):
-        """After login the navigation must contain a Sign Out link."""
+        """After login the navigation must contain a Sign Out control."""
         self._login()
         wait = WebDriverWait(self.driver, _WAIT)
         signout = wait.until(EC.presence_of_element_located((By.ID, 'nav-signout')))
+        self.assertEqual(
+            'button', signout.tag_name,
+            'Sign Out control must be a submit button in a POST form',
+        )
+        form = signout.find_element(By.XPATH, './ancestor::form[1]')
         self.assertIn(
-            '/logout', signout.get_attribute('href'),
-            'Sign Out link must point to /logout',
+            '/logout', form.get_attribute('action'),
+            'Sign Out form must post to /logout',
         )
         self._logout()
 

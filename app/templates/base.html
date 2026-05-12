@@ -113,7 +113,12 @@
             <li><a class="dropdown-item" href="{{ url_for('main.profile', user_id=current_user.id) }}"><i class="bi bi-person-circle"></i> View Profile</a></li>
             <li><a class="dropdown-item" href="{{ url_for('main.edit_profile') }}"><i class="bi bi-sliders"></i> Edit Profile</a></li>
             <li><hr class="dropdown-divider"></li>
-            <li><a id="nav-signout" class="dropdown-item nav-signout" href="{{ url_for('main.logout') }}"><i class="bi bi-box-arrow-right"></i> Sign Out</a></li>
+            <li>
+              <form method="POST" action="{{ url_for('main.logout') }}" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button id="nav-signout" class="dropdown-item nav-signout" type="submit"><i class="bi bi-box-arrow-right"></i> Sign Out</button>
+              </form>
+            </li>
           </ul>
         </div>
       {% else %}
