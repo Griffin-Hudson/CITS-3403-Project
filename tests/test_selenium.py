@@ -420,7 +420,8 @@ class TestPublicPageContent(_SeleniumBase):
         cards = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.beat-card[data-href]')))
         if not cards:
             self.skipTest('No beat cards on /discover — seed data required')
-        cards[0].click()
+        # JS click avoids ElementClickInterceptedException from the fixed bottom nav bar
+        self.driver.execute_script('arguments[0].click()', cards[0])
         wait.until(EC.url_contains('/feed'))
         self.assertIn('/feed', self.driver.current_url, 'Clicking a beat card must navigate to /feed')
 
