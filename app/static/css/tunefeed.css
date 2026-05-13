@@ -486,6 +486,8 @@ body {
    overridden with inline style where a narrower version is needed.
    ─────────────────────────────────────────────────────────── */
 .btn-ts-primary {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   background: var(--ts-orange);
   color: #fff;
@@ -496,6 +498,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 .btn-ts-primary:hover { background: var(--ts-orange-light); }
 

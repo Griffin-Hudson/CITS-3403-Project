@@ -69,6 +69,7 @@
 .auth-alert-info    { background: rgba(255,255,255,0.04); border-color: var(--ts-border);      color: var(--ts-text-secondary); }
 
 .auth-alert-close {
+  -webkit-appearance: none;
   appearance: none;
   background: none;
   border: none;
@@ -192,7 +193,8 @@
    to auto-fill the login form fields.
    ─────────────────────────────────────────────────────────── */
 .auth-demo-item {
-  appearance: none;                         /* remove browser default button style */
+  -webkit-appearance: none;
+  appearance: none;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--ts-border);
   border-radius: 10px;
@@ -353,4 +355,14 @@
 /* Single-column layout on narrow viewports */
 @media (max-width: 380px) {
   .password-requirements { grid-template-columns: 1fr; }
+}
+
+/* ── Fieldset reset ─────────────────────────────────────────
+   Browsers apply a default border, padding, and min-width to
+   <fieldset>. Reset so the layout is visually unchanged.    */
+.auth-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
 }
