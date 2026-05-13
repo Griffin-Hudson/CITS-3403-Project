@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="wallet-page">
+<main class="wallet-page">
   <div class="wallet-container">
 
     <header class="wallet-header">
@@ -84,7 +84,7 @@
                 {% if tx.note %}
                   <div class="wallet-tx-note">{{ tx.note }}</div>
                 {% endif %}
-                <div class="wallet-tx-date">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</div>
+                <time class="wallet-tx-date" datetime="{{ tx.created_at.strftime('%Y-%m-%dT%H:%M') }}">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</time>
               </div>
               <div class="wallet-tx-amount {% if tx.type == 'purchase' %}is-negative{% else %}is-positive{% endif %}">
                 {% if tx.type == 'purchase' %}-{% else %}+{% endif %}${{ '%.2f' % tx.amount }}
@@ -101,20 +101,23 @@
     </section>
 
   </div>
-</div>
+</main>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+(function () {
+  'use strict';
   // Quick-amount chips fill the amount input — saves typing for common values
-  document.querySelectorAll('.wallet-quick-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var input = document.getElementById('amount');
+  document.querySelectorAll('.wallet-quick-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById('amount');
       if (input) {
         input.value = btn.dataset.amount;
         input.focus();
       }
     });
   });
+}());
 </script>
 {% endblock %}

@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="auth-page">
+<main class="auth-page">
   <div class="ts-form-card shadow-sm">
 
     <div class="auth-logo">TuneFeed</div>
@@ -29,12 +29,15 @@
       {# hidden_tag() renders the CSRF hidden input — required for Flask-WTF to accept this POST #}
       {{ form.hidden_tag() }}
 
+      <fieldset class="auth-fieldset">
+        <legend class="visually-hidden">Account details</legend>
+
       <div class="ts-form-group">
         <label class="form-label" for="username">Username</label>
         {# value re-populates after a failed submission (e.g. username already taken) #}
         <input id="username" name="username" type="text" class="ts-input"
                placeholder="producername" value="{{ form.username.data or '' }}"
-               required minlength="3" maxlength="32"
+               required aria-required="true" minlength="3" maxlength="32"
                pattern="^[A-Za-z][A-Za-z0-9_.]*$"
                autocomplete="username" autocapitalize="none" spellcheck="false"
                aria-describedby="username-feedback" />
@@ -47,7 +50,7 @@
         <label class="form-label" for="email">Email</label>
         <input id="email" name="email" type="email" class="ts-input"
                placeholder="your@email.com" value="{{ form.email.data or '' }}"
-               required maxlength="120"
+               required aria-required="true" maxlength="120"
                autocomplete="email" autocapitalize="none" spellcheck="false"
                aria-describedby="email-feedback" />
         <div class="invalid-feedback" id="email-feedback">Please enter a valid email address.</div>
@@ -56,7 +59,7 @@
       <div class="ts-form-group">
         <label class="form-label" for="password">Password</label>
         <input id="password" name="password" type="password" class="ts-input"
-               placeholder="••••••••" required minlength="8" maxlength="128"
+               placeholder="••••••••" required aria-required="true" minlength="8" maxlength="128"
                autocomplete="new-password"
                aria-describedby="password-help password-feedback" />
         {# Live requirement checklist — JS toggles .met (green ✓) and .unmet (amber ✗) #}
@@ -77,7 +80,7 @@
         <label class="form-label" for="confirm_password">Confirm Password</label>
         {# WTForms EqualTo validator checks this matches the password field server-side #}
         <input id="confirm_password" name="confirm_password" type="password" class="ts-input"
-               placeholder="••••••••" required minlength="8" maxlength="128"
+               placeholder="••••••••" required aria-required="true" minlength="8" maxlength="128"
                autocomplete="new-password"
                aria-describedby="confirm-password-hint confirm-password-feedback" />
         {# Live mismatch hint — JS adds .show when values diverge #}
@@ -86,6 +89,8 @@
         </div>
         <div class="invalid-feedback" id="confirm-password-feedback">Passwords must match.</div>
       </div>
+
+      </fieldset>
 
       <button type="submit" class="btn-ts-primary auth-submit-btn fw-semibold">Create Account</button>
     </form>
@@ -97,7 +102,7 @@
     </div>
 
   </div>
-</div>
+</main>
 {% endblock %}
 
 {# auth-login.js handles: form validation feedback and password toggle #}

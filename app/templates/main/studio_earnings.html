@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="wallet-page">
+<main class="wallet-page">
   <div class="wallet-container">
 
     <header class="wallet-header studio-header">
@@ -67,7 +67,7 @@
                 {% if tx.note %}
                   <div class="wallet-tx-note">{{ tx.note }}</div>
                 {% endif %}
-                <div class="wallet-tx-date">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</div>
+                <time class="wallet-tx-date" datetime="{{ tx.created_at.strftime('%Y-%m-%dT%H:%M') }}">{{ tx.created_at.strftime('%b %d, %Y · %H:%M') }}</time>
               </div>
               <div class="wallet-tx-amount is-positive">
                 +${{ '%.2f' % tx.amount }}
@@ -84,5 +84,5 @@
     </section>
 
   </div>
-</div>
+</main>
 {% endblock %}

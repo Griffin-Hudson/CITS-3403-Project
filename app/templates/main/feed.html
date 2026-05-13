@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}TuneFeed — Listen{% endblock %}
+{% block title %}Listen — TuneFeed{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/feed.css') }}" />
 {% endblock %}
 
 {% block full_page %}
-<div class="feed-root" id="feed-root">
+<main class="feed-root" id="feed-root">
 
   <audio id="feed-audio-player" preload="metadata" crossorigin="anonymous"></audio>
 
@@ -206,7 +206,8 @@
         </div>
         <div class="feed-drawer-input-row">
           {% if current_user.is_authenticated %}
-            <input type="text" class="feed-drawer-input"
+            <label class="visually-hidden" for="drawer-input-{{ beat.id }}">Add a comment</label>
+            <input id="drawer-input-{{ beat.id }}" type="text" class="feed-drawer-input"
                    placeholder="Add a comment…"
                    data-beat-id="{{ beat.id }}"
                    maxlength="500" />
@@ -229,7 +230,7 @@
 
   </div>{# /feed-scroll #}
 
-</div>{# /feed-root #}
+</main>{# /feed-root #}
 
 {# ── REPORT MODAL — single shared overlay, controlled by feed.js ── #}
 <div class="report-modal-overlay" id="report-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="report-modal-heading">

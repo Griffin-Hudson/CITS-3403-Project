@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="auth-page">
+<main class="auth-page">
   <div class="ts-form-card shadow-sm">
 
     {# Gradient logo text rendered via CSS background-clip trick in auth-login.css #}
@@ -31,6 +31,9 @@
       {# hidden_tag() renders the CSRF hidden input — required for Flask-WTF to accept this POST #}
       {{ form.hidden_tag() }}
 
+      <fieldset class="auth-fieldset">
+        <legend class="visually-hidden">Sign in credentials</legend>
+
       <div class="ts-form-group">
         <label class="form-label" for="email">Email</label>
         {# value re-populates the field after a failed submission #}
@@ -52,6 +55,8 @@
           <input id="remember" name="remember" type="checkbox" class="auth-checkbox" /> Remember me
         </label>
       </div>
+
+      </fieldset>
 
       <button id="login-submit" type="submit" class="btn-ts-primary auth-submit-btn fw-semibold">Sign In</button>
     </form>
@@ -93,7 +98,7 @@
     </div>
 
   </div>
-</div>
+</main>
 {% endblock %}
 
 {# auth-login.js handles: form validation, password toggle, demo auto-fill, flash dismiss #}

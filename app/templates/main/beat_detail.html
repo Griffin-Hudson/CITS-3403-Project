@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="beat-detail-page">
+<main class="beat-detail-page">
 
   <a href="{{ url_for('main.discover') }}" class="beat-detail-back">
     <i class="bi bi-arrow-left"></i> Back to Discover
@@ -203,10 +203,11 @@
     </div>
   </div>
 
-</div>
+</main>
 
 <script>
 (function () {
+  'use strict';
   const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
   /* ── Custom audio player ──────────────────────────────── */
