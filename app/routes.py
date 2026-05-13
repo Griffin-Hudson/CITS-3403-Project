@@ -188,12 +188,31 @@ def discover():
     genre_rows = db.session.query(Beat.genre).filter(Beat.genre.isnot(None)).distinct().all()
     genres = sorted({r[0] for r in genre_rows if r[0]})
 
+    # Batch-load beat counts and follow states for the producers grid — avoids N+1
+    producer_ids = [p.id for p in producers]
+    beat_count_rows = (db.session.query(Beat.producer_id, db.func.count(Beat.id))
+                       .filter(Beat.producer_id.in_(producer_ids))
+                       .group_by(Beat.producer_id)
+                       .all()) if producer_ids else []
+    beat_counts = {pid: cnt for pid, cnt in beat_count_rows}
+
+    is_following_map = {}
+    if current_user.is_authenticated and producer_ids:
+        following_ids = {row[0] for row in
+            db.session.query(follows.c.followed_id)
+            .filter(follows.c.follower_id == current_user.id,
+                    follows.c.followed_id.in_(producer_ids))
+            .all()}
+        is_following_map = {pid: pid in following_ids for pid in producer_ids}
+
     return render_template('main/discover.html',
                            trending_beats=trending_beats,
                            new_beats=new_beats,
                            producers=producers,
                            genres=genres,
-                           selected_genre=selected_genre)
+                           selected_genre=selected_genre,
+                           beat_counts=beat_counts,
+                           is_following_map=is_following_map)
 
 
 @main.route('/feed')
