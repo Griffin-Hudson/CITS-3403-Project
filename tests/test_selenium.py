@@ -409,6 +409,21 @@ class TestPublicPageContent(_SeleniumBase):
             f'Discover page title should contain "Discover"; got "{self.driver.title}"',
         )
 
+    def test_discover_beat_card_navigates_to_feed(self):
+        """Clicking a beat card on /discover must navigate to /feed.
+
+        Beat cards use <div role="link" data-href="/feed"> wired by JS;
+        this verifies the click handler works end-to-end in a real browser.
+        """
+        self.driver.get(_HOST + '/discover')
+        wait = WebDriverWait(self.driver, _WAIT)
+        cards = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.beat-card[data-href]')))
+        if not cards:
+            self.skipTest('No beat cards on /discover — seed data required')
+        cards[0].click()
+        wait.until(EC.url_contains('/feed'))
+        self.assertIn('/feed', self.driver.current_url, 'Clicking a beat card must navigate to /feed')
+
     def test_feed_page_loads_without_error(self):
         """Navigating to /feed must load a page with TuneFeed in the title."""
         self.driver.get(_HOST + '/feed')

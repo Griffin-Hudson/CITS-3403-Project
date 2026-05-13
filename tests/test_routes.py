@@ -66,6 +66,21 @@ class TestProfileRoute:
         assert r.status_code == 404
 
 
+class TestDiscoverRoute:
+    def test_discover_with_seeded_data_loads(self, client, seeded_db):
+        """Discover page must return 200 when producers and beats exist.
+
+        Exercises the batch beat_counts and is_following_map queries that
+        only run when producer_ids is non-empty.
+        """
+        r = client.get('/discover')
+        assert r.status_code == 200
+
+    def test_discover_genre_filter_loads(self, client, seeded_db):
+        r = client.get('/discover?genre=Hip-Hop')
+        assert r.status_code == 200
+
+
 class TestSearchRoute:
     def test_search_empty_query_loads(self, client):
         r = client.get('/search')
