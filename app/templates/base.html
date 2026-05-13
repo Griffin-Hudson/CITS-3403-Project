@@ -9,7 +9,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}" />
 
   <title>{% block title %}TuneFeed{% endblock %}</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='32' y2='0' gradientUnits='userSpaceOnUse'><stop offset='0%' stop-color='%23d97706'/><stop offset='100%' stop-color='%2300d4aa'/></linearGradient></defs><rect x='0' y='9' width='5' height='14' rx='2.5' fill='url(%23g)'/><rect x='9' y='0' width='5' height='32' rx='2.5' fill='url(%23g)'/><rect x='18' y='5' width='5' height='22' rx='2.5' fill='url(%23g)'/><rect x='27' y='12' width='5' height='8' rx='2.5' fill='url(%23g)'/></svg>" />
 
   {# Google Fonts: DM Sans loaded with optical-size axis for crisp weight rendering #}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -33,7 +33,22 @@
   {# ── Top navigation bar ── #}
   <header class="top-nav">
     <div class="top-nav-left">
-      <a id="nav-brand" href="{{ url_for('main.discover') }}" class="brand">TuneFeed</a>
+      <a id="nav-brand" href="{{ url_for('main.discover') }}" class="brand" aria-label="TuneFeed home">
+        {# Waveform icon — 4 bars graduated in height, orange-to-teal gradient #}
+        <svg class="brand-icon" width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="tf-nav-g" x1="0" y1="0" x2="20" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   style="stop-color: var(--ts-orange)"/>
+              <stop offset="100%" style="stop-color: var(--ts-teal)"/>
+            </linearGradient>
+          </defs>
+          <rect x="0"  y="4" width="3" height="8"  rx="1.5" fill="url(#tf-nav-g)"/>
+          <rect x="5"  y="0" width="3" height="16" rx="1.5" fill="url(#tf-nav-g)"/>
+          <rect x="10" y="2" width="3" height="12" rx="1.5" fill="url(#tf-nav-g)"/>
+          <rect x="15" y="5" width="3" height="6"  rx="1.5" fill="url(#tf-nav-g)"/>
+        </svg>
+        <span class="brand-wordmark">TuneFeed</span>
+      </a>
 
       <nav class="top-nav-links d-flex align-items-center gap-3">
         <a id="nav-listen" href="{{ url_for('main.feed') }}" {% if request.endpoint == 'main.feed' %}class="active"{% endif %}>Listen</a>

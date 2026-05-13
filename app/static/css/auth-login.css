@@ -22,20 +22,31 @@
 }
 
 /* ── Brand logo heading ─────────────────────────────────────
-   CSS background-clip trick: the gradient is applied to the
-   background, then clipped to the text shape so only the
-   letters show the colour. -webkit-text-fill-color: transparent
-   makes the text itself invisible so the background shows through.
+   Flex column: SVG waveform icon above gradient wordmark text.
+   The gradient is applied to .auth-logo-wordmark only (not the
+   whole container) so the SVG fill is unaffected.
    ─────────────────────────────────────────────────────────── */
 .auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.auth-logo-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.auth-logo-wordmark {
   font-size: 2rem;
   font-weight: 800;
-  text-align: center;
-  margin-bottom: 4px;
   background: linear-gradient(135deg, var(--ts-orange), var(--ts-teal));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1;
 }
 
 /* Subtitle line under the logo */

@@ -75,12 +75,24 @@ body {
   gap: 18px;
 }
 
-/* Brand logo link in the nav */
+/* Brand logo link in the nav — flex row: SVG icon + wordmark */
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--ts-text-primary);
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.01em;
+}
+
+.brand-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.brand-wordmark {
+  line-height: 1;
 }
 
 /* Row of navigation links on the right side of the nav */
