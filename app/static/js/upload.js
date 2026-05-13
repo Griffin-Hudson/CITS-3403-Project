@@ -378,7 +378,7 @@
     const next = highlight + dir;
     if (next < 0 || next >= flatOpts.length) return;
     setHL(next);
-    const el = dropEl.querySelector('[data-idx=”' + highlight + '"');
+    const el = dropEl.querySelector('[data-idx="' + highlight + '"]');
     if (el) el.scrollIntoView({ block: 'nearest' });
   }
 
