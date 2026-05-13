@@ -1,6 +1,6 @@
 'use strict';
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   const picInput   = document.getElementById('profilePictureInput');
   let   preview    = document.getElementById('profilePicturePreview');
   const uploadForm = document.getElementById('uploadForm');
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const MAX_SIZE = 5 * 1024 * 1024;
 
   if (picInput) {
-    picInput.addEventListener('change', function (e) {
+    picInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const reader = new FileReader();
-      reader.onload = function (ev) {
+      reader.onload = (ev) => {
         // If the placeholder is a <div> (no existing avatar), swap it for an <img>
         if (preview.tagName !== 'IMG') {
           const img = document.createElement('img');
@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (bioArea && charCount) {
     charCount.textContent = bioArea.value.length;
-    bioArea.addEventListener('input', function () {
-      charCount.textContent = this.value.length;
+    bioArea.addEventListener('input', () => {
+      charCount.textContent = bioArea.value.length;
     });
   }
 
@@ -48,19 +48,19 @@ document.addEventListener('DOMContentLoaded', function () {
   // and fires a synthetic 'change' so the existing validation/preview handler runs.
   const uploadLabel = document.querySelector('.btn-upload-file');
   if (uploadLabel && picInput) {
-    uploadLabel.addEventListener('dragover', function (e) {
+    uploadLabel.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.stopPropagation();
       uploadLabel.classList.add('drag-over');
     });
 
-    uploadLabel.addEventListener('dragleave', function (e) {
+    uploadLabel.addEventListener('dragleave', (e) => {
       e.preventDefault();
       e.stopPropagation();
       uploadLabel.classList.remove('drag-over');
     });
 
-    uploadLabel.addEventListener('drop', function (e) {
+    uploadLabel.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
       uploadLabel.classList.remove('drag-over');

@@ -97,3 +97,27 @@
 
   animate();
 })();
+
+/* ── Beat card navigation ─────────────────────────────────────
+   Beat cards are <div role="link"> elements (not <a>) so that
+   the inner producer <a> link is valid HTML (anchors cannot be
+   nested). data-href holds the target URL. Clicks on the inner
+   producer <a> propagate naturally without reaching this handler.
+─────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  document.querySelectorAll('.beat-card[data-href]').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (!e.target.closest('a')) {
+        window.location.href = card.dataset.href;
+      }
+    });
+    card.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('a')) {
+        e.preventDefault();
+        window.location.href = card.dataset.href;
+      }
+    });
+  });
+}());
