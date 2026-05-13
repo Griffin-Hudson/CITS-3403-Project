@@ -7,6 +7,7 @@
 {% endblock %}
 
 {% block full_page %}
+<main class="discover-page">
 
 {# ═══════════════════════════════════════════════════════════
    PORTAL HERO — animated canvas wave entry point to /feed
@@ -14,7 +15,7 @@
 <section class="portal-hero">
 
   {# Animated wave canvas — drawn by discover.js #}
-  <canvas id="portal-canvas"></canvas>
+  <canvas id="portal-canvas" role="img" aria-label="Animated sound wave visualisation"></canvas>
 
   {# Radial gradient to blend canvas edges into the dark background #}
   <div class="portal-overlay"></div>
@@ -69,8 +70,8 @@
   {% if trending_beats %}
     <div class="beats-grid">
       {% for beat in trending_beats %}
-        {# Each beat card links to /feed so user lands straight on that beat #}
-        <a href="{{ url_for('main.feed') }}" class="beat-card" style="color:inherit;">
+        {# Each beat card navigates to /feed via JS (data-href) so <a> nesting is avoided #}
+        <div class="beat-card" data-href="{{ url_for('main.feed') }}" role="link" tabindex="0">
 
           <div class="beat-card-body">
             {% if beat.genre %}
@@ -79,10 +80,9 @@
 
             <div class="beat-card-title">{{ beat.title }}</div>
 
-            {# Producer name links to their profile #}
+            {# Producer name links to their profile; inner <a> is safe since outer is a <div> #}
             <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}"
-               class="beat-card-producer"
-               onclick="event.stopPropagation();">
+               class="beat-card-producer">
               {{ beat.producer.username if beat.producer else 'Unknown' }}
             </a>
 
@@ -97,7 +97,7 @@
               <span><i class="bi bi-heart"></i> {{ beat.likes_count }}</span>
             </div>
           </div>
-        </a>
+        </div>
       {% endfor %}
     </div>
 
@@ -127,7 +127,7 @@
   {% if new_beats %}
     <div class="beats-grid">
       {% for beat in new_beats %}
-        <a href="{{ url_for('main.feed') }}" class="beat-card" style="color:inherit;">
+        <div class="beat-card" data-href="{{ url_for('main.feed') }}" role="link" tabindex="0">
 
           <div class="beat-card-body">
             {% if beat.genre %}
@@ -135,15 +135,14 @@
             {% endif %}
             <div class="beat-card-title">{{ beat.title }}</div>
             <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}"
-               class="beat-card-producer"
-               onclick="event.stopPropagation();">
+               class="beat-card-producer">
               {{ beat.producer.username if beat.producer else 'Unknown' }}
             </a>
             <div class="beat-card-meta">
               {# Relative time — uploaded_at formatted by Jinja #}
               <span><i class="bi bi-clock"></i>
                 {% if beat.uploaded_at %}
-                  {{ beat.uploaded_at.strftime('%b %d') }}
+                  <time datetime="{{ beat.uploaded_at.strftime('%Y-%m-%d') }}">{{ beat.uploaded_at.strftime('%b %d') }}</time>
                 {% endif %}
               </span>
               {% if beat.price == 0 %}
@@ -153,7 +152,7 @@
               {% endif %}
             </div>
           </div>
-        </a>
+        </div>
       {% endfor %}
     </div>
 
@@ -199,12 +198,13 @@
             <span class="producer-name">{{ producer.username }}</span>
 
             <span class="producer-stats">
-              {{ producer.beats.count() }} beat{{ 's' if producer.beats.count() != 1 else '' }}
+              {% set cnt = beat_counts.get(producer.id, 0) %}
+              {{ cnt }} beat{{ 's' if cnt != 1 else '' }}
             </span>
 
             {% if current_user.is_authenticated and current_user.id != producer.id %}
-              {# Show follow state — clicking navigates to profile which has a follow button #}
-              {% if current_user.is_following(producer) %}
+              {# Follow state pre-loaded by discover() to avoid N+1 queries #}
+              {% if is_following_map.get(producer.id, False) %}
                 <span style="font-size:11px;color:var(--ts-teal);">Following</span>
               {% else %}
                 <span style="font-size:11px;color:var(--ts-orange);">Follow</span>
@@ -224,6 +224,8 @@
   {% endif %}
 
 </section>
+
+</main>
 
 {% endblock %}
 

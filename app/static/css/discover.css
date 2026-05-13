@@ -208,6 +208,10 @@
   transform: translateY(-4px);
   box-shadow: 0 12px 36px rgba(0,0,0,0.5);
 }
+.beat-card:focus-visible {
+  outline: 2px solid var(--ts-orange);
+  outline-offset: 2px;
+}
 
 /* Cover art square — fixed aspect ratio via padding trick */
 .beat-cover {

@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block full_page %}
-<div class="profile-page">
+<main class="profile-page">
 
   {# ═══════════════════════════════════════════════════════════
      PROFILE HEADER — avatar, bio, stats, follow button
@@ -25,7 +25,7 @@
       <div class="profile-username">{{ user.username }}</div>
       <div class="profile-joined">
         <i class="bi bi-calendar3"></i>
-        Joined {{ user.created_at.strftime('%B %Y') if user.created_at else 'TuneFeed' }}
+        Joined <time datetime="{{ user.created_at.strftime('%Y-%m') if user.created_at else '' }}">{{ user.created_at.strftime('%B %Y') if user.created_at else 'TuneFeed' }}</time>
       </div>
 
       {% if user.bio %}
@@ -265,7 +265,7 @@
   </div>{# /tab-panel-saved #}
   {% endif %}
 
-</div>{# /profile-page #}
+</main>{# /profile-page #}
 {% endblock %}
 
 {% block extra_js %}

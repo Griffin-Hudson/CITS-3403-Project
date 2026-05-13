@@ -267,6 +267,8 @@
 }
 
 .btn-save {
+  -webkit-appearance: none;
+  appearance: none;
   flex: 1;
   padding: 10px 16px;
   border-radius: 10px;
@@ -277,6 +279,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 
 .btn-save:hover {

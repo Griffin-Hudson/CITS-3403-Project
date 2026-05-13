@@ -14,7 +14,9 @@
   <form method="GET" action="{{ url_for('main.search') }}" class="row g-2 mb-4">
     <div class="col-md-5">
       {# Text query — matched against beat title, genre, mood_tag, and producer username #}
+      <label class="visually-hidden" for="search-q">Search query</label>
       <input
+        id="search-q"
         type="text"
         class="form-control"
         name="q"
@@ -24,7 +26,8 @@
     </div>
     <div class="col-md-3">
       {# Entity type filter — limits results to beats or producers only if not 'all' #}
-      <select class="form-select" name="type">
+      <label class="visually-hidden" for="search-type">Result type</label>
+      <select id="search-type" class="form-select" name="type">
         <option value="all" {% if search_type == 'all' %}selected{% endif %}>All</option>
         <option value="beats" {% if search_type == 'beats' %}selected{% endif %}>Beats</option>
         <option value="producers" {% if search_type == 'producers' %}selected{% endif %}>Producers</option>
@@ -32,7 +35,9 @@
     </div>
     <div class="col-md-2">
       {# Genre secondary filter — narrows beat results to a specific genre string #}
+      <label class="visually-hidden" for="search-genre">Genre filter</label>
       <input
+        id="search-genre"
         type="text"
         class="form-control"
         name="genre"

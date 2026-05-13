@@ -75,12 +75,24 @@ body {
   gap: 18px;
 }
 
-/* Brand logo link in the nav */
+/* Brand logo link in the nav — flex row: SVG icon + wordmark */
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--ts-text-primary);
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.01em;
+}
+
+.brand-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.brand-wordmark {
+  line-height: 1;
 }
 
 /* Row of navigation links on the right side of the nav */
@@ -486,6 +498,8 @@ body {
    overridden with inline style where a narrower version is needed.
    ─────────────────────────────────────────────────────────── */
 .btn-ts-primary {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   background: var(--ts-orange);
   color: #fff;
@@ -496,6 +510,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  font-family: inherit;
 }
 .btn-ts-primary:hover { background: var(--ts-orange-light); }
 

@@ -230,7 +230,7 @@
 (function () {
   'use strict';
 
-  var GENRE_GROUPS = [
+  const GENRE_GROUPS = [
     { label: 'Urban',              genres: ['Hip-Hop', 'Trap', 'Drill', 'R&B / Soul', 'Afrobeats', 'Dancehall'] },
     { label: 'Electronic',         genres: ['Electronic / EDM', 'House', 'Techno', 'Drum & Bass', 'Ambient', 'Lo-Fi'] },
     { label: 'Pop & Global',       genres: ['Pop', 'Latin', 'Reggaeton', 'World Music'] },
@@ -238,21 +238,21 @@
     { label: 'Specialty',          genres: ['Cinematic', 'Experimental', 'Soundtrack'] },
   ];
 
-  var hiddenEl = document.getElementById('genre');
-  var comboEl  = document.getElementById('genre-combo');
-  var inputEl  = document.getElementById('genre-input');
-  var clearEl  = document.getElementById('genre-clear');
-  var dropEl   = document.getElementById('genre-dropdown');
+  const hiddenEl = document.getElementById('genre');
+  const comboEl  = document.getElementById('genre-combo');
+  const inputEl  = document.getElementById('genre-input');
+  const clearEl  = document.getElementById('genre-clear');
+  const dropEl   = document.getElementById('genre-dropdown');
 
   if (!hiddenEl || !inputEl || !dropEl) return;
 
-  var isOpen    = false;
-  var highlight = -1;
-  var flatOpts  = [];
-  var prevVal   = hiddenEl.value;
+  let isOpen    = false;
+  let highlight = -1;
+  let flatOpts  = [];
+  let prevVal   = hiddenEl.value;
 
   function allGenres() {
-    return GENRE_GROUPS.reduce(function (acc, g) { return acc.concat(g.genres); }, []);
+    return GENRE_GROUPS.reduce((acc, g) => acc.concat(g.genres), []);
   }
 
   function open() {
@@ -263,8 +263,8 @@
     inputEl.setAttribute('aria-expanded', 'true');
     renderList(inputEl.value.trim());
     dropEl.hidden = false;
-    var sel = dropEl.querySelector('.is-selected');
-    if (sel) setTimeout(function () { sel.scrollIntoView({ block: 'nearest' }); }, 0);
+    const sel = dropEl.querySelector('.is-selected');
+    if (sel) setTimeout(() => { sel.scrollIntoView({ block: 'nearest' }); }, 0);
   }
 
   function close(accept) {
@@ -288,24 +288,24 @@
   function renderList(q) {
     dropEl.innerHTML = '';
     flatOpts = [];
-    var ql = (q || '').toLowerCase();
-    var hasAny = false;
+    const ql = (q || '').toLowerCase();
+    let hasAny = false;
 
-    GENRE_GROUPS.forEach(function (group) {
-      var matches = ql
-        ? group.genres.filter(function (g) { return g.toLowerCase().indexOf(ql) !== -1; })
+    GENRE_GROUPS.forEach((group) => {
+      const matches = ql
+        ? group.genres.filter((g) => g.toLowerCase().indexOf(ql) !== -1)
         : group.genres;
       if (!matches.length) return;
 
-      var hdr = document.createElement('li');
+      const hdr = document.createElement('li');
       hdr.className = 'genre-group-header';
       hdr.textContent = group.label;
       hdr.setAttribute('aria-hidden', 'true');
       dropEl.appendChild(hdr);
 
-      matches.forEach(function (g) {
+      matches.forEach((g) => {
         hasAny = true;
-        var idx = flatOpts.length;
+        const idx = flatOpts.length;
         flatOpts.push({ value: g, custom: false });
         dropEl.appendChild(makeItem(g, idx, false));
       });
@@ -313,9 +313,9 @@
 
     /* Custom entry if typed value has no exact match */
     if (q) {
-      var exact = allGenres().some(function (g) { return g.toLowerCase() === ql; });
+      const exact = allGenres().some((g) => g.toLowerCase() === ql);
       if (!exact) {
-        var idx = flatOpts.length;
+        const idx = flatOpts.length;
         flatOpts.push({ value: q, custom: true });
         dropEl.appendChild(makeItem(q, idx, true));
         hasAny = true;
@@ -323,7 +323,7 @@
     }
 
     if (!hasAny) {
-      var empty = document.createElement('li');
+      const empty = document.createElement('li');
       empty.className = 'genre-empty';
       empty.textContent = 'No genres match — keep typing to use a custom one.';
       dropEl.appendChild(empty);
@@ -334,15 +334,15 @@
   }
 
   function makeItem(value, idx, custom) {
-    var li = document.createElement('li');
+    const li = document.createElement('li');
     li.className = 'genre-item' + (custom ? ' is-custom' : '');
     li.setAttribute('role', 'option');
     li.dataset.idx = idx;
 
-    var icon = document.createElement('i');
+    const icon = document.createElement('i');
     icon.className = (custom ? 'bi bi-plus-circle-dotted' : 'bi bi-music-note') + ' genre-lead';
 
-    var span = document.createElement('span');
+    const span = document.createElement('span');
     span.textContent = custom ? 'Use “' + value + '”' : value;
 
     li.appendChild(icon);
@@ -350,16 +350,16 @@
 
     if (!custom && hiddenEl.value === value) {
       li.classList.add('is-selected');
-      var check = document.createElement('i');
+      const check = document.createElement('i');
       check.className = 'bi bi-check2 genre-check';
       li.appendChild(check);
     }
 
-    li.addEventListener('mousedown', function (e) {
+    li.addEventListener('mousedown', (e) => {
       e.preventDefault();
       commit(value);
     });
-    li.addEventListener('mousemove', function () { setHL(idx); });
+    li.addEventListener('mousemove', () => { setHL(idx); });
     return li;
   }
 
@@ -369,28 +369,28 @@
   }
 
   function refreshHighlight() {
-    dropEl.querySelectorAll('.genre-item').forEach(function (el) {
+    dropEl.querySelectorAll('.genre-item').forEach((el) => {
       el.classList.toggle('is-highlighted', parseInt(el.dataset.idx, 10) === highlight);
     });
   }
 
   function stepHL(dir) {
-    var next = highlight + dir;
+    const next = highlight + dir;
     if (next < 0 || next >= flatOpts.length) return;
     setHL(next);
-    var el = dropEl.querySelector('[data-idx="' + highlight + '"]');
+    const el = dropEl.querySelector('[data-idx="' + highlight + '"]');
     if (el) el.scrollIntoView({ block: 'nearest' });
   }
 
-  inputEl.addEventListener('focus', function () { open(); });
+  inputEl.addEventListener('focus', () => { open(); });
 
-  inputEl.addEventListener('input', function () {
+  inputEl.addEventListener('input', () => {
     clearEl.hidden = !inputEl.value;
     renderList(inputEl.value.trim());
     if (!isOpen) open();
   });
 
-  inputEl.addEventListener('keydown', function (e) {
+  inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (!isOpen) { open(); return; }
@@ -421,24 +421,24 @@
     }
   });
 
-  inputEl.addEventListener('blur', function () {
-    setTimeout(function () {
+  inputEl.addEventListener('blur', () => {
+    setTimeout(() => {
       if (!isOpen) return;
-      var v = inputEl.value.trim();
+      const v = inputEl.value.trim();
       if (v) { hiddenEl.value = v; clearEl.hidden = false; }
       else   { hiddenEl.value = ''; clearEl.hidden = true; }
       close(true);
     }, 160);
   });
 
-  clearEl.addEventListener('mousedown', function (e) {
+  clearEl.addEventListener('mousedown', (e) => {
     e.preventDefault();
     commit('');
     inputEl.focus();
   });
 
   /* Click on icon or chevron area toggles the panel */
-  comboEl.addEventListener('mousedown', function (e) {
+  comboEl.addEventListener('mousedown', (e) => {
     if (inputEl.contains(e.target) || clearEl.contains(e.target)) return;
     e.preventDefault();
     if (isOpen) { close(true); inputEl.blur(); }

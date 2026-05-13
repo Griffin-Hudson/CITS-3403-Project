@@ -334,6 +334,7 @@
   cursor: pointer;
   border-radius: 2px;
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   background: linear-gradient(to right,
     var(--ts-orange) calc(var(--range-pct, 0) * 1%),

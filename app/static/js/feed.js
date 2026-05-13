@@ -291,8 +291,11 @@ function ensureAudioVisualizer() {
 }
 
 // ── Tap-to-play hint ──────────────────────────────────────────────────────
-// Shown over the waveform when the browser blocks autoplay.
-// Disappears the moment the user clicks anywhere.
+// Browsers block unmuted audio that plays without a prior user gesture (the
+// Autoplay Policy, enforced in Chrome 66+, Firefox 66+, Safari 11+). This is
+// a hard security constraint — it cannot be bypassed from JavaScript.
+// When audio.play() rejects with NotAllowedError we show this overlay so the
+// user knows one tap is needed. The hint disappears on the next click/tap.
 
 function showTapHint(beatId) {
   const shell = document.querySelector(`#feed-card-${beatId} .feed-waveform-shell`);

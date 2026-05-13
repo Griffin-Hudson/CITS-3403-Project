@@ -22,20 +22,31 @@
 }
 
 /* ── Brand logo heading ─────────────────────────────────────
-   CSS background-clip trick: the gradient is applied to the
-   background, then clipped to the text shape so only the
-   letters show the colour. -webkit-text-fill-color: transparent
-   makes the text itself invisible so the background shows through.
+   Flex column: SVG waveform icon above gradient wordmark text.
+   The gradient is applied to .auth-logo-wordmark only (not the
+   whole container) so the SVG fill is unaffected.
    ─────────────────────────────────────────────────────────── */
 .auth-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.auth-logo-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.auth-logo-wordmark {
   font-size: 2rem;
   font-weight: 800;
-  text-align: center;
-  margin-bottom: 4px;
   background: linear-gradient(135deg, var(--ts-orange), var(--ts-teal));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  line-height: 1;
 }
 
 /* Subtitle line under the logo */
@@ -69,6 +80,7 @@
 .auth-alert-info    { background: rgba(255,255,255,0.04); border-color: var(--ts-border);      color: var(--ts-text-secondary); }
 
 .auth-alert-close {
+  -webkit-appearance: none;
   appearance: none;
   background: none;
   border: none;
@@ -192,7 +204,8 @@
    to auto-fill the login form fields.
    ─────────────────────────────────────────────────────────── */
 .auth-demo-item {
-  appearance: none;                         /* remove browser default button style */
+  -webkit-appearance: none;
+  appearance: none;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--ts-border);
   border-radius: 10px;
@@ -353,4 +366,14 @@
 /* Single-column layout on narrow viewports */
 @media (max-width: 380px) {
   .password-requirements { grid-template-columns: 1fr; }
+}
+
+/* ── Fieldset reset ─────────────────────────────────────────
+   Browsers apply a default border, padding, and min-width to
+   <fieldset>. Reset so the layout is visually unchanged.    */
+.auth-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
 }
