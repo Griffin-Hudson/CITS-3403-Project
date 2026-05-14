@@ -177,15 +177,12 @@ class TestWalletRoute:
         assert r.status_code == 200
         logout(client)
 
-    def test_wallet_topup_valid_amount(self, client, seeded_db, app):
-        """Posting a valid top-up amount must succeed and increase the user's balance."""
+    def test_wallet_topup_valid_amount(self, client, seeded_db):
+        """Posting a valid amount to /wallet must redirect to the card top-up page."""
         login(client)
-        r = client.post('/wallet', data={'amount': '20.00'}, follow_redirects=True)
-        assert r.status_code == 200
-        with app.app_context():
-            from app.models import User
-            u = User.query.get(seeded_db['user_id'])
-            assert u.balance >= 20.0, 'Balance must have increased after top-up'
+        r = client.post('/wallet', data={'amount': '20.00'}, follow_redirects=False)
+        assert r.status_code == 302
+        assert 'topup' in r.headers.get('Location', '')
         logout(client)
 
     def test_wallet_topup_invalid_amount_rejected(self, client, seeded_db, app):
