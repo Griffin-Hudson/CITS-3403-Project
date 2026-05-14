@@ -1,12 +1,14 @@
 import logging
 import os
 from secrets import token_hex
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 from werkzeug.utils import secure_filename
+
+import requests as http_requests
 
 logger = logging.getLogger(__name__)
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import limiter
@@ -293,7 +295,14 @@ def discover():
 @main.route('/feed')
 def feed():
     # Service-layer ranking blends engagement, freshness, and user affinity.
-    beats = get_feed_beats(current_user, limit=15)
+    focused_beat_id = request.args.get('beat', type=int)
+    focused_beat = Beat.query.get_or_404(focused_beat_id) if focused_beat_id else None
+    ranked_beats = get_feed_beats(
+        current_user,
+        limit=14 if focused_beat else 15,
+        exclude_ids=[focused_beat.id] if focused_beat else None,
+    )
+    beats = ([focused_beat] if focused_beat else []) + ranked_beats
 
     is_liked_map      = {}
     is_saved_map      = {}
@@ -694,3 +703,140 @@ def search():
     return render_template('main/search.html', beats=beats, producers=producers,
                            query=query, search_type=search_type, genre_filter=genre_filter,
                            follower_counts=follower_counts)
+
+
+# ---------------------------------------------------------------------------
+# Spotify OAuth — Authorization Code Flow
+# Docs: https://developer.spotify.com/documentation/web-api/tutorials/code-flow
+# ---------------------------------------------------------------------------
+
+_SPOTIFY_AUTH_URL  = 'https://accounts.spotify.com/authorize'
+_SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
+_SPOTIFY_ME_URL    = 'https://api.spotify.com/v1/me'
+
+# Required scopes — user-read-private gives us display name and profile URL
+_SPOTIFY_SCOPE = 'user-read-private'
+
+
+@main.route('/spotify/connect')
+@login_required
+def spotify_connect():
+    """Redirect the logged-in user to Spotify's authorization page.
+
+    A random `state` value is stored in the session to guard the callback
+    against CSRF attacks (mirrors Spotify's own recommended flow).
+    """
+    client_id    = current_app.config.get('SPOTIFY_CLIENT_ID', '')
+    redirect_uri = current_app.config.get('SPOTIFY_REDIRECT_URI', '')
+
+    if not client_id:
+        flash('Spotify integration is not configured. Contact the administrator.', 'warning')
+        return redirect(url_for('main.edit_profile'))
+
+    state = token_hex(16)
+    session['spotify_oauth_state'] = state
+
+    params = urlencode({
+        'client_id':     client_id,
+        'response_type': 'code',
+        'redirect_uri':  redirect_uri,
+        'scope':         _SPOTIFY_SCOPE,
+        'state':         state,
+    })
+    return redirect(f'{_SPOTIFY_AUTH_URL}?{params}')
+
+
+@main.route('/spotify/callback')
+@login_required
+def spotify_callback():
+    """Handle Spotify's redirect after user authorization.
+
+    Verifies the `state` parameter, exchanges the authorization code for an
+    access token, fetches the user's Spotify profile, and saves the relevant
+    fields to the TuneFeed user record. Tokens are never forwarded to the
+    client — they are used server-side only for this single profile fetch.
+    """
+    error = request.args.get('error')
+    if error:
+        flash(f'Spotify authorization denied: {error}.', 'warning')
+        return redirect(url_for('main.edit_profile'))
+
+    code  = request.args.get('code', '')
+    state = request.args.get('state', '')
+
+    # Reject the callback if state does not match what we stored — prevents CSRF
+    expected_state = session.pop('spotify_oauth_state', None)
+    if not expected_state or state != expected_state:
+        logger.warning('Spotify callback state mismatch for user %s', current_user.id)
+        flash('Spotify connection failed: invalid state. Please try again.', 'danger')
+        return redirect(url_for('main.edit_profile'))
+
+    client_id     = current_app.config.get('SPOTIFY_CLIENT_ID', '')
+    client_secret = current_app.config.get('SPOTIFY_CLIENT_SECRET', '')
+    redirect_uri  = current_app.config.get('SPOTIFY_REDIRECT_URI', '')
+
+    # Exchange authorization code for access token
+    try:
+        token_resp = http_requests.post(
+            _SPOTIFY_TOKEN_URL,
+            data={
+                'grant_type':   'authorization_code',
+                'code':         code,
+                'redirect_uri': redirect_uri,
+            },
+            auth=(client_id, client_secret),
+            timeout=10,
+        )
+        token_resp.raise_for_status()
+        token_data   = token_resp.json()
+        access_token = token_data['access_token']
+    except Exception:
+        logger.error('Spotify token exchange failed for user %s', current_user.id, exc_info=True)
+        flash('Could not connect to Spotify. Please try again.', 'danger')
+        return redirect(url_for('main.edit_profile'))
+
+    # Fetch the user's Spotify profile using the short-lived access token
+    try:
+        me_resp = http_requests.get(
+            _SPOTIFY_ME_URL,
+            headers={'Authorization': f'Bearer {access_token}'},
+            timeout=10,
+        )
+        me_resp.raise_for_status()
+        profile = me_resp.json()
+    except Exception:
+        logger.error('Spotify /me fetch failed for user %s', current_user.id, exc_info=True)
+        flash('Could not retrieve your Spotify profile. Please try again.', 'danger')
+        return redirect(url_for('main.edit_profile'))
+
+    # Persist only the identity fields — no tokens are stored
+    current_user.spotify_id           = profile.get('id')
+    current_user.spotify_display_name = profile.get('display_name') or profile.get('id')
+    current_user.spotify_url          = (profile.get('external_urls') or {}).get('spotify') or ''
+
+    # Artist URL is not returned by /me — profiles with an artist page have it
+    # populated via the seeder or a future Spotify for Artists API integration.
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        logger.error('DB save failed after Spotify connect for user %s', current_user.id, exc_info=True)
+        flash('Could not save your Spotify connection. Please try again.', 'danger')
+        return redirect(url_for('main.edit_profile'))
+
+    flash('Spotify account connected successfully!', 'success')
+    return redirect(url_for('main.edit_profile'))
+
+
+@main.route('/spotify/disconnect', methods=['POST'])
+@login_required
+def spotify_disconnect():
+    """Remove the Spotify connection from the current user's account."""
+    current_user.spotify_id           = None
+    current_user.spotify_display_name = None
+    current_user.spotify_url          = None
+    current_user.spotify_artist_url   = None
+    db.session.commit()
+    flash('Spotify account disconnected.', 'info')
+    return redirect(url_for('main.edit_profile'))

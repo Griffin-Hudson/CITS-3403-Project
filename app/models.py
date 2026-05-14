@@ -50,6 +50,13 @@ class User(UserMixin, db.Model):
     balance       = db.Column(db.Float, nullable=False, default=0.0)
     earnings      = db.Column(db.Float, nullable=False, default=0.0)
 
+    # Spotify OAuth connection — null until user explicitly links their account
+    spotify_id           = db.Column(db.String(128), nullable=True, unique=True)
+    spotify_display_name = db.Column(db.String(256), nullable=True)
+    spotify_url          = db.Column(db.String(256), nullable=True)
+    # Artist-page URL set when the linked account has a public Spotify artist profile
+    spotify_artist_url   = db.Column(db.String(256), nullable=True)
+
     beats        = db.relationship('Beat',        back_populates='producer', lazy='dynamic')
     likes        = db.relationship('Like',        back_populates='user',     lazy='dynamic')
     purchases    = db.relationship('Purchase',    back_populates='buyer',    lazy='dynamic')
@@ -82,6 +89,11 @@ class User(UserMixin, db.Model):
     def has_uploaded_beats(self):
         """Return True once the user has at least one beat on the platform."""
         return self.beats.first() is not None
+
+    @property
+    def spotify_connected(self):
+        """Return True when the user has linked a Spotify account via OAuth."""
+        return self.spotify_id is not None
 
     # ---- auth ----
     def set_password(self, password):
