@@ -10,22 +10,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import limiter
-from app.forms import (SignupForm, LoginForm, UploadBeatForm, EditProfileForm,
-                       TopUpForm, MIN_TOPUP, MAX_TOPUP)
+from app.forms import SignupForm, LoginForm, UploadBeatForm, EditProfileForm, TopUpForm, MIN_TOPUP, MAX_TOPUP
 from app.models import db, User, Beat, Like, Purchase, Transaction, saved_beats, follows
 from app.services.feed_service import get_feed_beats
 from app.services.wallet_service import (
-    top_up,
-    purchase_beat,
-    tier_price,
-    user_owns_tier,
-    beat_has_exclusive_owner,
-    TIER_LABELS,
-    TIER_LEASE,
-    TIER_PREMIUM,
-    TIER_EXCLUSIVE,
-    METHOD_BALANCE,
-    METHOD_CARD,
+    top_up, purchase_beat, tier_price, user_owns_tier, beat_has_exclusive_owner,
+    TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE, TIER_LABELS, METHOD_BALANCE, METHOD_CARD,
 )
 
 main = Blueprint('main', __name__)
@@ -37,7 +27,16 @@ AVATAR_BG_COLOR = '1a1f3a'  # Deep indigo — sophisticated, matches website aes
 
 ALLOWED_UPLOAD_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_UPLOAD_SIZE_MB = 5
-MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 5 MB
+MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+ALLOWED_BEAT_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
+ALLOWED_BEAT_COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+MAX_BEAT_AUDIO_SIZE_MB = 50
+MAX_BEAT_AUDIO_SIZE    = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
+MAX_BEAT_COVER_SIZE_MB = 5
+MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
+
+VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
 # beat upload limits
 ALLOWED_BEAT_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
@@ -79,6 +78,28 @@ def _random_avataaars_avatar_url():
 def _allowed_file(filename):
     """Check if uploaded file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
+
+
+def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
+    """Save a beat audio or cover file to static/uploads/<subdir>/; return relative path or None."""
+    if not file or not file.filename:
+        return None
+    name = secure_filename(file.filename)
+    if '.' not in name:
+        return None
+    ext = name.rsplit('.', 1)[1].lower()
+    if ext not in allowed_exts:
+        return None
+    file.seek(0, 2)
+    size = file.tell()
+    file.seek(0)
+    if size == 0 or size > max_size:
+        return None
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
+    file.save(os.path.join(upload_dir, filename))
+    return f'/static/uploads/{subdir}/{filename}'
 
 
 def _save_user_upload(file, user_id):
@@ -322,16 +343,13 @@ def feed():
 def upload():
     form = UploadBeatForm()
     if form.validate_on_submit():
-        # step 1: save audio file (required)
         audio_path = _save_beat_upload(
             form.audio_file.data, 'beats', current_user.id,
             ALLOWED_BEAT_AUDIO_EXTENSIONS, MAX_BEAT_AUDIO_SIZE,
         )
         if not audio_path:
-            flash(f'Audio file is missing or larger than {MAX_BEAT_AUDIO_SIZE_MB}MB.', 'danger')
+            flash(f'Audio file is missing or larger than {MAX_BEAT_AUDIO_SIZE_MB} MB.', 'danger')
             return render_template('main/upload.html', form=form)
-
-        # step 2: save cover if one was provided
         cover_path = None
         if form.cover_file.data and form.cover_file.data.filename:
             cover_path = _save_beat_upload(
@@ -339,7 +357,7 @@ def upload():
                 ALLOWED_BEAT_COVER_EXTENSIONS, MAX_BEAT_COVER_SIZE,
             )
             if not cover_path:
-                flash(f'Cover image must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB}MB.', 'danger')
+                flash(f'Cover must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB} MB.', 'danger')
                 return render_template('main/upload.html', form=form)
 
         beat = Beat(
@@ -674,3 +692,112 @@ def search():
     return render_template('main/search.html', beats=beats, producers=producers,
                            query=query, search_type=search_type, genre_filter=genre_filter,
                            follower_counts=follower_counts)
+
+
+@main.route('/wallet/topup', methods=['GET', 'POST'])
+@login_required
+def wallet_topup():
+    raw = request.values.get('amount', '').strip()
+    try:
+        amount = round(float(raw), 2)
+    except (TypeError, ValueError):
+        flash('Pick an amount on the wallet page first.', 'warning')
+        return redirect(url_for('main.wallet'))
+
+    if amount < MIN_TOPUP or amount > MAX_TOPUP:
+        flash(f'Amount must be between ${MIN_TOPUP:.0f} and ${MAX_TOPUP:,.0f}.', 'danger')
+        return redirect(url_for('main.wallet'))
+
+    if request.method == 'POST':
+        try:
+            top_up(current_user, amount, note='Wallet top-up via card (demo)')
+            db.session.commit()
+        except Exception:
+            logger.error('Wallet top-up failed for user %s', current_user.id, exc_info=True)
+            db.session.rollback()
+            flash('Top-up failed. Please try again.', 'danger')
+            return redirect(url_for('main.wallet_topup', amount=f'{amount:.2f}'))
+        flash(f'Added ${amount:.2f} to your balance (demo — no real charge).', 'success')
+        return redirect(url_for('main.wallet'))
+
+    return render_template('main/wallet_topup.html',
+                           amount=amount,
+                           balance=current_user.balance or 0.0)
+
+
+@main.route('/checkout/<int:beat_id>', methods=['GET', 'POST'])
+@login_required
+def checkout(beat_id):
+    beat = Beat.query.get_or_404(beat_id)
+    tier = (request.values.get('tier') or '').lower()
+
+    if tier not in VALID_TIERS:
+        flash('Pick a licence tier to continue.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    price = tier_price(beat, tier)
+    if price is None:
+        flash('That licence is not available for this beat.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    if beat.producer_id == current_user.id:
+        flash('You cannot buy your own beat.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    if user_owns_tier(current_user, beat, tier):
+        flash(f'You already own the {TIER_LABELS[tier]} licence for this beat.', 'info')
+        return redirect(url_for('main.my_feeds'))
+
+    if tier == TIER_EXCLUSIVE and beat_has_exclusive_owner(beat):
+        flash('Exclusive rights for this beat have already been sold.', 'danger')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    error = None
+    selected_method = request.form.get('method', METHOD_BALANCE) if request.method == 'POST' else METHOD_BALANCE
+
+    if request.method == 'POST':
+        method = selected_method
+        if method not in (METHOD_BALANCE, METHOD_CARD):
+            error = 'Choose a payment method.'
+        elif method == METHOD_BALANCE and (current_user.balance or 0.0) < price:
+            error = (
+                f'Insufficient balance. Top up ${price - (current_user.balance or 0.0):.2f} '
+                'more to complete this purchase.'
+            )
+        else:
+            try:
+                purchase_beat(current_user, beat, tier, method)
+                db.session.commit()
+            except Exception:
+                logger.error('Checkout failed for user %s beat %s', current_user.id, beat.id, exc_info=True)
+                db.session.rollback()
+                flash('Something went wrong. Please try again.', 'danger')
+                return redirect(url_for('main.checkout', beat_id=beat.id, tier=tier))
+
+            if method == METHOD_CARD:
+                flash('Card payment processed (demo — no real charge).', 'info')
+            flash(f'{TIER_LABELS[tier]} licence purchased for "{beat.title}".', 'success')
+            return redirect(url_for('main.my_feeds'))
+
+    return render_template('main/checkout.html',
+                           beat=beat,
+                           tier=tier,
+                           tier_label=TIER_LABELS[tier],
+                           price=price,
+                           selected_method=selected_method,
+                           error=error,
+                           balance=current_user.balance or 0.0)
+
+
+@main.route('/my-feeds')
+@login_required
+def my_feeds():
+    page = request.args.get('page', 1, type=int)
+    purchases = (Purchase.query
+                 .filter_by(buyer_id=current_user.id)
+                 .join(Beat, Beat.id == Purchase.beat_id)
+                 .order_by(Purchase.purchased_at.desc())
+                 .paginate(page=page, per_page=12))
+    return render_template('main/my_feeds.html',
+                           purchases=purchases,
+                           tier_labels=TIER_LABELS)
