@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Top Up via Card — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wallet.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="wallet-page">
+  <div class="wallet-container">
+
+    <header class="wallet-header">
+      <h1 class="wallet-title">Top up with card</h1>
+      <p class="wallet-subtitle">
+        Adding ${{ '%.2f' % amount }} to your balance (demo — no real charge).
+      </p>
+    </header>
+
+    <section class="wallet-grid">
+
+      {# ── Balance summary ── #}
+      <div class="wallet-card wallet-balance-card">
+        <div class="wallet-card-label">Current Balance</div>
+        <div class="wallet-balance-amount">${{ '%.2f' % balance }}</div>
+        <div class="wallet-card-label" style="margin-top: var(--ts-space-sm)">After top-up</div>
+        <div class="wallet-balance-amount" style="color: var(--ts-orange)">
+          ${{ '%.2f' % (balance + amount) }}
+        </div>
+      </div>
+
+      {# ── Card form ── #}
+      <div class="wallet-card">
+        <div class="wallet-card-label">Card Details (demo)</div>
+        <form method="POST"
+              action="{{ url_for('main.wallet_topup', amount='%.2f' % amount) }}"
+              id="topup-card-form" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+          <div class="checkout-card-grid">
+            <div class="upload-field" style="grid-column: 1 / -1">
+              <label class="upload-label" for="tc-number">Card number</label>
+              <input type="text" id="tc-number" class="ts-input upload-input"
+                     placeholder="4242 4242 4242 4242" maxlength="19"
+                     autocomplete="cc-number" inputmode="numeric" />
+            </div>
+            <div class="upload-field">
+              <label class="upload-label" for="tc-expiry">Expiry</label>
+              <input type="text" id="tc-expiry" class="ts-input upload-input"
+                     placeholder="MM / YY" maxlength="7"
+                     autocomplete="cc-exp" />
+            </div>
+            <div class="upload-field">
+              <label class="upload-label" for="tc-cvc">CVC</label>
+              <input type="text" id="tc-cvc" class="ts-input upload-input"
+                     placeholder="123" maxlength="4"
+                     autocomplete="cc-csc" inputmode="numeric" />
+            </div>
+          </div>
+
+          <p class="upload-hint" style="margin-top: var(--ts-space-sm)">
+            <i class="bi bi-shield-lock"></i>
+            Demo only — card fields are cosmetic; no real payment is processed.
+          </p>
+
+          <div class="checkout-actions">
+            <a href="{{ url_for('main.wallet') }}" class="upload-cancel">Cancel</a>
+            <button type="submit" class="upload-submit">
+              <i class="bi bi-credit-card-fill"></i>
+              Confirm ${{ '%.2f' % amount }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  function formatCardNumber(input) {
+    let v = input.value.replace(/\D/g, '').slice(0, 16);
+    input.value = v.match(/.{1,4}/g)?.join(' ') ?? v;
+  }
+
+  function formatExpiry(input) {
+    let v = input.value.replace(/\D/g, '').slice(0, 4);
+    if (v.length > 2) v = v.slice(0, 2) + ' / ' + v.slice(2);
+    input.value = v;
+  }
+
+  const num    = document.getElementById('tc-number');
+  const expiry = document.getElementById('tc-expiry');
+  const cvc    = document.getElementById('tc-cvc');
+
+  if (num)    num.addEventListener('input', () => formatCardNumber(num));
+  if (expiry) expiry.addEventListener('input', () => formatExpiry(expiry));
+  if (cvc)    cvc.addEventListener('input', () => { cvc.value = cvc.value.replace(/\D/g, '').slice(0, 4); });
+}());
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wallet.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="wallet-page">
+  <div class="wallet-container">
+
+    <header class="wallet-header">
+      <h1 class="wallet-title">Checkout</h1>
+      <p class="wallet-subtitle">Review your order and complete your purchase.</p>
+    </header>
+
+    {% if error %}
+      <div class="upload-error-card" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div><strong>{{ error }}</strong></div>
+      </div>
+    {% endif %}
+
+    <section class="wallet-grid">
+
+      {# ── Order summary ── #}
+      <div class="wallet-card">
+        <div class="wallet-card-label">Order Summary</div>
+        <div class="checkout-beat-row">
+          {% if beat.cover_url %}
+            <img class="checkout-beat-cover"
+                 src="{{ beat.cover_url }}"
+                 alt="Cover art for {{ beat.title }}" />
+          {% else %}
+            <div class="checkout-beat-cover checkout-beat-cover-placeholder">
+              <i class="bi bi-music-note-beamed"></i>
+            </div>
+          {% endif %}
+          <div class="checkout-beat-meta">
+            <div class="checkout-beat-title">{{ beat.title }}</div>
+            <div class="checkout-beat-producer">
+              by @{{ beat.producer.username if beat.producer else 'Unknown' }}
+            </div>
+            {% if beat.genre %}
+              <div class="checkout-beat-genre">{{ beat.genre }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="checkout-tier-row">
+          <span class="checkout-tier-label">{{ tier_label }} Licence</span>
+          <span class="checkout-tier-price">${{ '%.2f' % price }}</span>
+        </div>
+
+        <div class="checkout-balance-row">
+          <span>Your balance</span>
+          <span class="${{ 'checkout-balance-ok' if balance >= price else 'checkout-balance-low' }}">
+            ${{ '%.2f' % balance }}
+          </span>
+        </div>
+      </div>
+
+      {# ── Payment form ── #}
+      <div class="wallet-card">
+        <div class="wallet-card-label">Payment Method</div>
+        <form id="checkout-form" method="POST"
+              action="{{ url_for('main.checkout', beat_id=beat.id, tier=tier) }}"
+              novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+          <div class="checkout-methods" role="radiogroup" aria-label="Payment method">
+            <label class="checkout-method-option {% if selected_method == 'balance' %}is-selected{% endif %}">
+              <input type="radio" name="method" value="balance" class="checkout-method-radio"
+                     {% if selected_method == 'balance' %}checked{% endif %} />
+              <span class="checkout-method-body">
+                <span class="checkout-method-icon"><i class="bi bi-wallet2"></i></span>
+                <span class="checkout-method-info">
+                  <strong>Wallet balance</strong>
+                  <span class="checkout-method-sub">Available: ${{ '%.2f' % balance }}</span>
+                </span>
+              </span>
+            </label>
+
+            <label class="checkout-method-option {% if selected_method == 'card' %}is-selected{% endif %}">
+              <input type="radio" name="method" value="card" class="checkout-method-radio"
+                     {% if selected_method == 'card' %}checked{% endif %} />
+              <span class="checkout-method-body">
+                <span class="checkout-method-icon"><i class="bi bi-credit-card"></i></span>
+                <span class="checkout-method-info">
+                  <strong>Card (demo)</strong>
+                  <span class="checkout-method-sub">No real charge — for demo only.</span>
+                </span>
+              </span>
+            </label>
+          </div>
+
+          {# Card fields shown only when card method is selected #}
+          <div id="checkout-card-fields" {% if selected_method != 'card' %}hidden{% endif %}>
+            <div class="checkout-card-grid">
+              <div class="upload-field">
+                <label class="upload-label" for="card-number">Card number</label>
+                <input type="text" id="card-number" class="ts-input upload-input"
+                       placeholder="4242 4242 4242 4242" maxlength="19"
+                       autocomplete="cc-number" inputmode="numeric" />
+              </div>
+              <div class="upload-field">
+                <label class="upload-label" for="card-expiry">Expiry</label>
+                <input type="text" id="card-expiry" class="ts-input upload-input"
+                       placeholder="MM / YY" maxlength="7"
+                       autocomplete="cc-exp" />
+              </div>
+              <div class="upload-field">
+                <label class="upload-label" for="card-cvc">CVC</label>
+                <input type="text" id="card-cvc" class="ts-input upload-input"
+                       placeholder="123" maxlength="4"
+                       autocomplete="cc-csc" inputmode="numeric" />
+              </div>
+            </div>
+            <p class="upload-hint">
+              <i class="bi bi-shield-lock"></i>
+              Demo only — card fields are cosmetic; no payment is processed.
+            </p>
+          </div>
+
+          <div class="checkout-actions">
+            <a href="{{ url_for('main.beat_detail', beat_id=beat.id) }}"
+               class="upload-cancel">Cancel</a>
+            <button type="submit" class="upload-submit" id="checkout-submit">
+              <i class="bi bi-bag-check-fill"></i>
+              Pay ${{ '%.2f' % price }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </section>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+  const radios     = document.querySelectorAll('.checkout-method-radio');
+  const cardFields = document.getElementById('checkout-card-fields');
+  const options    = document.querySelectorAll('.checkout-method-option');
+
+  function syncUI() {
+    radios.forEach((r) => {
+      const opt = r.closest('.checkout-method-option');
+      opt.classList.toggle('is-selected', r.checked);
+    });
+    const cardChecked = document.querySelector('input[name="method"][value="card"]').checked;
+    cardFields.hidden = !cardChecked;
+  }
+
+  radios.forEach((r) => r.addEventListener('change', syncUI));
+  syncUI();
+}());
+</script>
+{% endblock %}

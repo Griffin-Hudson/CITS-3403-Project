@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}My Feeds — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/wallet.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="wallet-page">
+  <div class="wallet-container">
+
+    <header class="wallet-header">
+      <h1 class="wallet-title">My Feeds</h1>
+      <p class="wallet-subtitle">Beats you've licensed — stream and download anytime.</p>
+    </header>
+
+    {% if purchases.items %}
+      <section class="my-feeds-grid" aria-label="Purchased beats">
+        {% for purchase in purchases.items %}
+          {% set beat = purchase.beat %}
+          <article class="my-feeds-card" id="purchase-{{ purchase.id }}">
+
+            <a href="{{ url_for('main.beat_detail', beat_id=beat.id) }}"
+               class="my-feeds-cover-link" tabindex="-1" aria-hidden="true">
+              {% if beat.cover_url %}
+                <img class="my-feeds-cover"
+                     src="{{ beat.cover_url }}"
+                     alt="Cover art for {{ beat.title }}" />
+              {% else %}
+                <div class="my-feeds-cover my-feeds-cover-placeholder">
+                  <i class="bi bi-music-note-beamed"></i>
+                </div>
+              {% endif %}
+            </a>
+
+            <div class="my-feeds-body">
+              <a class="my-feeds-title"
+                 href="{{ url_for('main.beat_detail', beat_id=beat.id) }}">{{ beat.title }}</a>
+
+              <div class="my-feeds-producer">
+                by
+                <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}">
+                  @{{ beat.producer.username if beat.producer else 'Unknown' }}
+                </a>
+              </div>
+
+              <div class="my-feeds-meta">
+                {% if beat.genre %}
+                  <span class="my-feeds-genre">{{ beat.genre }}</span>
+                {% endif %}
+                {% if beat.bpm %}
+                  <span class="my-feeds-bpm">{{ beat.bpm }} BPM</span>
+                {% endif %}
+              </div>
+
+              <div class="my-feeds-footer">
+                <span class="my-feeds-tier-badge my-feeds-tier-{{ purchase.licence_type }}">
+                  {{ tier_labels.get(purchase.licence_type, purchase.licence_type|capitalize) }}
+                </span>
+                <span class="my-feeds-price">
+                  {% if purchase.price_paid == 0.0 %}Free{% else %}${{ '%.2f' % purchase.price_paid }}{% endif %}
+                </span>
+                <time class="my-feeds-date"
+                      datetime="{{ purchase.purchased_at.strftime('%Y-%m-%dT%H:%M') }}">
+                  {{ purchase.purchased_at.strftime('%b %d, %Y') }}
+                </time>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+
+      {# ── Pagination ── #}
+      {% if purchases.pages > 1 %}
+        <nav class="wallet-pagination" aria-label="Purchases pagination">
+          {% if purchases.has_prev %}
+            <a class="wallet-page-btn"
+               href="{{ url_for('main.my_feeds', page=purchases.prev_num) }}"
+               aria-label="Previous page">
+              <i class="bi bi-chevron-left"></i> Prev
+            </a>
+          {% endif %}
+          <span class="wallet-page-info">
+            Page {{ purchases.page }} of {{ purchases.pages }}
+          </span>
+          {% if purchases.has_next %}
+            <a class="wallet-page-btn"
+               href="{{ url_for('main.my_feeds', page=purchases.next_num) }}"
+               aria-label="Next page">
+              Next <i class="bi bi-chevron-right"></i>
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+
+    {% else %}
+      <div class="wallet-empty" id="my-feeds-empty">
+        <i class="bi bi-collection-play"></i>
+        <p>No beats yet. <a href="{{ url_for('main.discover') }}">Discover beats</a> to get started.</p>
+      </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}
