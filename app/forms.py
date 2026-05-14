@@ -3,17 +3,14 @@
 import re
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import BooleanField, FloatField, IntegerField, StringField, PasswordField, SubmitField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 
 
-def _safe_url(form, field):
-    """Reject URLs with dangerous schemes (javascript:, data:, vbscript:, etc.)."""
-    if not field.data:
-        return
-    v = field.data.strip().lower()
-    if not (v.startswith('/') or v.startswith('http://') or v.startswith('https://')):
-        raise ValidationError('URL must be a relative path or start with http:// or https://')
+# allowed extensions for beat upload (kept here so the validator can use them)
+AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
+COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 
 # Mainstream password rules: 8–128 chars, mixed case, digit, special char.
@@ -76,8 +73,14 @@ class UploadBeatForm(FlaskForm):
     price           = FloatField('Basic Lease Price',     validators=[DataRequired(), NumberRange(min=0)])
     premium_price   = FloatField('Premium License Price', validators=[Optional(), NumberRange(min=0)])
     exclusive_price = FloatField('Exclusive Rights Price', validators=[Optional(), NumberRange(min=0)])
-    audio_url = StringField('Audio File URL', validators=[DataRequired(), Length(max=256), _safe_url])
-    cover_url = StringField('Cover Image URL', validators=[Optional(), Length(max=256), _safe_url])
+    audio_file = FileField('Audio File', validators=[
+        FileRequired(message='Pick an audio file to upload.'),
+        FileAllowed(AUDIO_EXTENSIONS, message='Audio must be MP3, WAV, M4A, or OGG.'),
+    ])
+    cover_file = FileField('Cover Image', validators=[
+        Optional(),
+        FileAllowed(COVER_EXTENSIONS, message='Cover must be PNG, JPG, or WebP.'),
+    ])
     submit    = SubmitField('Upload Beat')
 
 
