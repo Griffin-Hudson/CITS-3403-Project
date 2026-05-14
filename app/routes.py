@@ -375,10 +375,6 @@ def upload():
             producer_id=current_user.id,
         )
         db.session.add(beat)
-        # Promote the user to 'producer' the first time they upload, so the
-        # role accurately reflects their activity on the platform.
-        if current_user.role != 'producer':
-            current_user.role = 'producer'
         db.session.commit()
         flash('Beat uploaded successfully!', 'success')
         return redirect(url_for('main.feed'))
@@ -638,7 +634,7 @@ def my_feeds():
 @main.route('/studio/earnings')
 @login_required
 def studio_earnings():
-    if current_user.role != 'producer':
+    if not current_user.has_uploaded_beats:
         flash('Upload your first beat to unlock the creator studio.', 'info')
         return redirect(url_for('main.upload'))
 

@@ -106,19 +106,18 @@ class TestUploadRoute:
             'audio_file': (io.BytesIO(b'ID3\x00fake mp3 bytes'), 'track.mp3'),
         }
 
-    def test_post_creates_beat_and_promotes_user(self, app, client, seeded_db):
+    def test_post_creates_beat_for_current_user(self, app, client, seeded_db):
         login(client)
         r = self._post(client, self._base_form())
         assert r.status_code == 302
         assert '/feed' in r.headers.get('Location', '')
 
         with app.app_context():
+            from app.models import Beat, db
             beat = Beat.query.filter_by(title='Late Night Drive').first()
             assert beat is not None
             assert beat.audio_url.startswith('/static/uploads/beats/')
             assert beat.producer_id == seeded_db['user_id']
-            user = User.query.get(seeded_db['user_id'])
-            assert user.role == 'producer'
             db.session.delete(beat)
             db.session.commit()
         logout(client)
@@ -214,19 +213,17 @@ class TestUploadRoute:
             'audio_file':   (io.BytesIO(b'fake mp3 data'), 'beat.mp3'),
         }
 
-    def test_upload_creates_beat_and_promotes_role(self, client, seeded_db, app):
-        """Posting a valid beat form must create a Beat row and ensure role=producer."""
+    def test_upload_creates_beat(self, client, seeded_db, app):
+        """Posting a valid beat form must create a Beat row for the current user."""
         login(client)
         r = client.post('/upload', data=self._base_form(),
                         content_type='multipart/form-data', follow_redirects=True)
         assert r.status_code == 200
         with app.app_context():
-            from app.models import Beat, User
+            from app.models import Beat
             beat = Beat.query.filter_by(title='My New Beat').first()
             assert beat is not None, 'Beat must be created in the database'
             assert beat.producer_id == seeded_db['user_id']
-            user = User.query.get(seeded_db['user_id'])
-            assert user.role == 'producer', 'Upload must promote user to producer role'
         logout(client)
 
     def test_upload_missing_audio_rejected(self, client, seeded_db):
@@ -265,11 +262,26 @@ class TestUploadRoute:
 
 
 class TestStudioEarningsRoute:
-    def test_studio_earnings_loads_for_producer(self, client, seeded_db):
-        """Studio earnings page must load for the seeded producer user."""
+    def test_studio_earnings_loads_for_user_with_beats(self, client, seeded_db):
+        """Studio earnings page must load for users who have uploaded beats."""
         login(client)
         r = client.get('/studio/earnings')
-        assert r.status_code == 200, f'/studio/earnings returned {r.status_code} for a producer'
+        assert r.status_code == 200, f'/studio/earnings returned {r.status_code} for a user with beats'
+        logout(client)
+
+    def test_studio_earnings_redirects_user_without_beats(self, client, app):
+        """Users without beats should upload before viewing studio earnings."""
+        with app.app_context():
+            from app.models import db, User
+            user = User(username='listener', email='listener@example.com')
+            user.set_password('testpass')
+            db.session.add(user)
+            db.session.commit()
+
+        login(client, email='listener@example.com', password='testpass')
+        r = client.get('/studio/earnings', follow_redirects=False)
+        assert r.status_code == 302
+        assert '/upload' in r.headers['Location']
         logout(client)
 
 

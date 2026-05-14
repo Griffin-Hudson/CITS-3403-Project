@@ -31,7 +31,7 @@ def client(app):
 def seeded_db(app):
     """Insert one user and one beat; tears down after each test to prevent state bleed."""
     with app.app_context():
-        user = User(username='testuser', email='test@example.com', role='producer')
+        user = User(username='testuser', email='test@example.com')
         user.set_password('testpass')
         _db.session.add(user)
         _db.session.flush()

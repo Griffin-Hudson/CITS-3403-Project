@@ -398,6 +398,15 @@ class TestBeatModel(_AppTestCase):
         db.session.commit()
         self.assertEqual(beat.play_count, 0)
 
+    def test_user_without_beats_is_not_marked_as_uploader(self):
+        self.assertFalse(self.producer.has_uploaded_beats)
+
+    def test_user_with_beats_is_marked_as_uploader(self):
+        beat = _make_beat(self.producer)
+        db.session.add(beat)
+        db.session.commit()
+        self.assertTrue(self.producer.has_uploaded_beats)
+
     def test_comment_count_excludes_replies(self):
         """comment_count must count only top-level comments, not nested replies."""
         beat = _make_beat(self.producer)

@@ -78,7 +78,7 @@
                 <span class="nav-balance-row-value">${{ '%.2f' % (current_user.balance or 0) }}</span>
               </a>
             </li>
-            {% if current_user.role == 'producer' %}
+            {% if current_user.has_uploaded_beats %}
               <li>
                 <a class="dropdown-item nav-balance-row" href="{{ url_for('main.studio_earnings') }}">
                   <span class="nav-balance-row-label">
