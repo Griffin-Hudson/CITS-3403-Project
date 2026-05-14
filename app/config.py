@@ -24,8 +24,7 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
 
-    # cap total request size so a huge beat upload can't exhaust memory.
-    # leaves headroom for the 50 MB audio + 5 MB cover + form overhead.
+    # leaves headroom for 50 MB audio + 5 MB cover + form overhead
     MAX_CONTENT_LENGTH = 60 * 1024 * 1024
 
     SESSION_COOKIE_HTTPONLY = True
