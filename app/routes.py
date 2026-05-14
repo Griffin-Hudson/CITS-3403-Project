@@ -38,14 +38,6 @@ MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
 
 VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
-# beat upload limits
-ALLOWED_BEAT_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
-ALLOWED_BEAT_COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
-MAX_BEAT_AUDIO_SIZE_MB = 50
-MAX_BEAT_AUDIO_SIZE = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
-MAX_BEAT_COVER_SIZE_MB = 5
-MAX_BEAT_COVER_SIZE = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
-
 
 def _safe_redirect_target(target, request_host=''):
     """Allow only same-site redirect targets or root-relative paths."""
@@ -133,38 +125,13 @@ def _save_user_upload(file, user_id):
     return f'/static/uploads/profiles/{filename}'
 
 
-def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
-    """Save a beat audio or cover file under static/uploads/<subdir>/."""
-    if not file or not file.filename:
-        return None
-    name = secure_filename(file.filename)
-    if '.' not in name:
-        return None
-    ext = name.rsplit('.', 1)[1].lower()
-    if ext not in allowed_exts:
-        return None
-
-    # size check using stream tell/seek
-    file.seek(0, 2)
-    size = file.tell()
-    file.seek(0)
-    if size == 0 or size > max_size:
-        return None
-
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subdir)
-    os.makedirs(upload_dir, exist_ok=True)
-    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
-    file.save(os.path.join(upload_dir, filename))
-    return f'/static/uploads/{subdir}/{filename}'
-
-
 @main.route('/')
 def index():
     return redirect(url_for('main.feed'))
 
 
 @main.route('/login', methods=['GET', 'POST'])
-@limiter.limit('20 per minute')
+@limiter.limit('5 per 15 minutes')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -182,7 +149,7 @@ def login():
 
 
 @main.route('/register', methods=['GET', 'POST'])
-@limiter.limit('10 per hour')
+@limiter.limit('5 per 15 minutes')
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))

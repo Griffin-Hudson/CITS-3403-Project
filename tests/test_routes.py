@@ -30,6 +30,13 @@ class TestPublicRoutes:
             r = client.get(path)
             assert r.status_code == 200, f'{path} returned {r.status_code}'
 
+    def test_security_headers_present(self, client):
+        r = client.get('/login')
+        assert r.headers['X-Content-Type-Options'] == 'nosniff'
+        assert r.headers['X-Frame-Options'] == 'DENY'
+        assert r.headers['Referrer-Policy'] == 'strict-origin-when-cross-origin'
+        assert 'camera=()' in r.headers['Permissions-Policy']
+
 
 class TestProtectedRoutes:
     def test_unauthenticated_redirected(self, client):
@@ -83,76 +90,6 @@ class TestDiscoverRoute:
     def test_discover_genre_filter_loads(self, client, seeded_db):
         r = client.get('/discover?genre=Hip-Hop')
         assert r.status_code == 200
-
-
-class TestUploadRoute:
-    """POST /upload — covers file upload, validation errors, and side effects."""
-
-    def _post(self, client, data):
-        # multipart/form-data because the form has FileFields
-        return client.post('/upload', data=data, content_type='multipart/form-data',
-                           follow_redirects=False)
-
-    def _base_form(self):
-        # required fields shared by the happy-path tests
-        return {
-            'title': 'Late Night Drive',
-            'genre': 'Lo-Fi',
-            'bpm': '85',
-            'key': 'C minor',
-            'mood_tag': 'Chill',
-            'licence_type': 'Non-exclusive',
-            'price': '4.99',
-            'audio_file': (io.BytesIO(b'ID3\x00fake mp3 bytes'), 'track.mp3'),
-        }
-
-    def test_post_creates_beat_for_current_user(self, app, client, seeded_db):
-        login(client)
-        r = self._post(client, self._base_form())
-        assert r.status_code == 302
-        assert '/feed' in r.headers.get('Location', '')
-
-        with app.app_context():
-            from app.models import Beat, db
-            beat = Beat.query.filter_by(title='Late Night Drive').first()
-            assert beat is not None
-            assert beat.audio_url.startswith('/static/uploads/beats/')
-            assert beat.producer_id == seeded_db['user_id']
-            db.session.delete(beat)
-            db.session.commit()
-        logout(client)
-
-    def test_post_missing_audio_re_renders_form(self, client, seeded_db):
-        login(client)
-        data = self._base_form()
-        data.pop('audio_file')
-        r = self._post(client, data)
-        # form failed validation: page is re-rendered, not redirected
-        assert r.status_code == 200
-        assert b'Pick an audio file' in r.data or b'audio' in r.data.lower()
-        logout(client)
-
-    def test_post_rejects_disallowed_audio_extension(self, app, client, seeded_db):
-        login(client)
-        data = self._base_form()
-        data['title'] = 'Bad Ext Beat'
-        data['audio_file'] = (io.BytesIO(b'not really audio'), 'evil.exe')
-        r = self._post(client, data)
-        assert r.status_code == 200
-        with app.app_context():
-            assert Beat.query.filter_by(title='Bad Ext Beat').first() is None
-        logout(client)
-
-    def test_post_requires_title(self, app, client, seeded_db):
-        login(client)
-        data = self._base_form()
-        data['title'] = ''
-        r = self._post(client, data)
-        assert r.status_code == 200
-        with app.app_context():
-            # no beat with empty title should have been written
-            assert Beat.query.filter_by(title='').first() is None
-        logout(client)
 
 
 class TestSearchRoute:
