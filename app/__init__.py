@@ -8,7 +8,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from app.config import Config
+from app.config import Config, validate_secret_key
 
 # Defined at module level so other modules can import them without triggering circular imports
 login_manager = LoginManager()
@@ -28,6 +28,7 @@ def _enforce_sqlite_fk(dbapi_connection, connection_record):
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    validate_secret_key(app)
 
     if not app.debug:
         logging.basicConfig(

@@ -709,6 +709,10 @@ class TestSafeUrlValidator(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self._run('evil.com/steal')
 
+    def test_protocol_relative_url_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('//evil.com/steal')
+
 
 # ---------------------------------------------------------------------------
 # Entry point

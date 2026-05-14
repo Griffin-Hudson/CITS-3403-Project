@@ -1,6 +1,7 @@
 """WTForms definitions for auth, profile, search, and beat upload flows."""
 
 import re
+from urllib.parse import urlparse
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
@@ -14,6 +15,22 @@ COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 # Mainstream password rules: 8–128 chars, mixed case, digit, special char.
 PASSWORD_SPECIAL_CHARS = r"!@#$%^&*()\-_=+\[\]{};:'\",.<>/?\\|`~"
 _PASSWORD_SPECIAL_RE = re.compile(f'[{PASSWORD_SPECIAL_CHARS}]')
+
+
+def _safe_url(form, field):
+    """Allow local paths and http(s) URLs; reject script-like or bare-domain inputs."""
+    value = (field.data or '').strip()
+    if not value:
+        return
+
+    parsed = urlparse(value)
+    if value.startswith('/') and not value.startswith('//') and not parsed.scheme and not parsed.netloc:
+        return
+
+    if parsed.scheme in {'http', 'https'} and parsed.netloc:
+        return
+
+    raise ValidationError('Enter a safe URL or local path.')
 
 
 class SignupForm(FlaskForm):
