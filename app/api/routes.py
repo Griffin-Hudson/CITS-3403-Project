@@ -10,9 +10,12 @@ from uuid import uuid4
 from flask import Blueprint, jsonify, request, session
 from flask_login import current_user
 
+from app import limiter
 from app.models import (db, Beat, User, Comment, BeatPlayEvent, CommentReport,
                         Like, Purchase, saved_beats, follows, comment_likes, comment_dislikes)
 from app.services.feed_service import get_feed_beats
+
+SEARCH_MAX_RESULTS = 50
 
 api = Blueprint('api', __name__)
 
@@ -105,6 +108,7 @@ def feed():
 # ---------------------------------------------------------------------------
 
 @api.route('/beats/<int:beat_id>/save', methods=['POST'])
+@limiter.limit('60 per minute')
 def toggle_save(beat_id):
     """Toggle the saved/bookmark state for `beat_id`. Returns {'saved': bool}."""
     if not current_user.is_authenticated:
@@ -121,6 +125,7 @@ def toggle_save(beat_id):
 
 
 @api.route('/beats/<int:beat_id>/like', methods=['POST'])
+@limiter.limit('60 per minute')
 def toggle_like(beat_id):
     """Toggle the like state for `beat_id`. Returns {'liked': bool, 'likes_count': int}."""
     if not current_user.is_authenticated:
@@ -137,6 +142,7 @@ def toggle_like(beat_id):
 
 
 @api.route('/beats/<int:beat_id>/play', methods=['POST'])
+@limiter.limit('120 per minute')
 def record_play(beat_id):
     """Increment play count with per-user/session deduplication window."""
     beat = Beat.query.get_or_404(beat_id)
@@ -173,6 +179,7 @@ def record_play(beat_id):
 # ---------------------------------------------------------------------------
 
 @api.route('/producers/<int:producer_id>/follow', methods=['POST'])
+@limiter.limit('30 per minute')
 def toggle_follow(producer_id):
     """Toggle follow state for `producer_id`. Returns {'following': bool, 'followers_count': int}."""
     if not current_user.is_authenticated:
@@ -273,6 +280,7 @@ def get_comments(beat_id):
 
 
 @api.route('/beats/<int:beat_id>/comments', methods=['POST'])
+@limiter.limit('20 per minute')
 def post_comment(beat_id):
     if not current_user.is_authenticated:
         return jsonify({'error': 'Authentication required'}), 401
@@ -374,6 +382,64 @@ def unreport_comment(comment_id):
     db.session.delete(report)
     db.session.commit()
     return jsonify({'reported': False})
+
+
+@api.route('/search')
+@limiter.limit('60 per minute')
+def search():
+    """AJAX search endpoint — returns beats and producers as JSON."""
+    query        = request.args.get('q', '').strip()
+    search_type  = request.args.get('type', 'all')
+    genre_filter = request.args.get('genre', '').strip()
+
+    beats_out = []
+    producers_out = []
+
+    if query or genre_filter:
+        if search_type in ('all', 'beats'):
+            bq = Beat.query
+            if query:
+                bq = bq.filter(
+                    Beat.title.ilike(f'%{query}%') |
+                    Beat.genre.ilike(f'%{query}%') |
+                    Beat.mood_tag.ilike(f'%{query}%')
+                )
+            if genre_filter:
+                bq = bq.filter(Beat.genre.ilike(f'%{genre_filter}%'))
+            for b in bq.order_by(Beat.uploaded_at.desc()).limit(SEARCH_MAX_RESULTS).all():
+                beats_out.append({
+                    'id':          b.id,
+                    'title':       b.title,
+                    'genre':       b.genre or '',
+                    'bpm':         b.bpm,
+                    'key':         b.key or '',
+                    'likes_count': b.likes_count,
+                })
+
+        if search_type in ('all', 'producers') and query:
+            producers = User.query.filter(
+                User.username.ilike(f'%{query}%') |
+                User.bio.ilike(f'%{query}%')
+            ).limit(SEARCH_MAX_RESULTS).all()
+            if producers:
+                rows = (db.session.query(follows.c.followed_id, db.func.count(follows.c.follower_id))
+                        .filter(follows.c.followed_id.in_([p.id for p in producers]))
+                        .group_by(follows.c.followed_id).all())
+                follower_map = {pid: cnt for pid, cnt in rows}
+                for p in producers:
+                    producers_out.append({
+                        'id':              p.id,
+                        'username':        p.username,
+                        'followers_count': follower_map.get(p.id, 0),
+                    })
+
+    return jsonify({
+        'beats':        beats_out,
+        'producers':    producers_out,
+        'query':        query,
+        'search_type':  search_type,
+        'genre_filter': genre_filter,
+    })
 
 
 @api.route('/comments/<int:comment_id>', methods=['DELETE'])
