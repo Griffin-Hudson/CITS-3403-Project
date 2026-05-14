@@ -5,6 +5,17 @@ Run from the project root:  python seed.py
 Creates sample producers, beats, likes,
 comments, and replies so every feed feature can be tested immediately.
 Drops and recreates all tables on each run.
+
+MP3 beats in this seeder are purely for demonstration purposes.
+Each file was hand-selected from producers who explicitly listed their
+work as free-to-use. Proper licensing and royalty infrastructure are
+identified as a future priority — see README for details.
+
+ProducedByKyle's beats (WAV) are unreleased originals shared personally
+by the artist for use in this project. Kyle is a Spotify-verified
+professional producer who granted explicit permission for TuneFeed
+to feature his work as a demonstration of the platform's capabilities.
+This is a genuine commercial-grade producer endorsement, not stock audio.
 """
 
 import os
@@ -35,8 +46,15 @@ PRODUCERS = [
         "username": "ProducedByKyle",
         "email": "producedbykyle@tunefeed.io",
         "password": "password123",
-        "bio": "Producer.",
+        "bio": "Boom Bap & Hip-Hop producer. Dusty samples, hard-hitting drums, and timeless sound. Available on Spotify.",
         "avatar_url": "https://api.dicebear.com/9.x/avataaars/svg?seed=producedbykyle",
+        # ProducedByKyle is a Spotify-verified professional producer who granted
+        # explicit permission for TuneFeed to feature his unreleased beats.
+        # Artist page: https://open.spotify.com/artist/34KLV4fA8n6XZyFrWs9iRx
+        "spotify_id":           "34KLV4fA8n6XZyFrWs9iRx",
+        "spotify_display_name": "ProducedByKyle",
+        "spotify_url":          "https://open.spotify.com/artist/34KLV4fA8n6XZyFrWs9iRx",
+        "spotify_artist_url":   "https://open.spotify.com/artist/34KLV4fA8n6XZyFrWs9iRx",
     },
     {
         "username": "Swayy",
@@ -149,6 +167,14 @@ AUDIO_PATHS = {
     "Reflection":                               "/static/audio/reflection.mp3",
     "Psyched":                                  "/static/audio/psyched.mp3",
     "ROLLERCOASTER":                            "/static/audio/rollercoaster.mp3",
+
+    # ProducedByKyle — unreleased originals shared personally for this project (WAV)
+    "Escargot":                                  "/static/audio/escargot.wav",
+    "Reverse Layup":                             "/static/audio/reverse_layup.wav",
+    "Unknown":                                   "/static/audio/unknown.wav",
+    "Word Magicc":                               "/static/audio/word_magicc.wav",
+    "No Danger":                                 "/static/audio/no_danger.wav",
+    "Sandro Jova":                               "/static/audio/sandro_jova.wav",
 }
 
 BEATS = [
@@ -160,7 +186,13 @@ BEATS = [
     ("POISON",    0, "Trap", 136, "C# Min", "eerie,emotional,melodic",            "2:50", "Non-exclusive",  24.99,  64.99, 249.99,    9, False,  2),
     ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,energetic",          "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
 
-    # ── ProducedByKyle — (beats coming) ──────────────────────────────────────
+    # ── ProducedByKyle — Boom Bap (unreleased originals, WAV) ────────────────
+    ("Escargot",     1, "Boom Bap",  88, "B Min",  "dusty,soulful,melodic",         "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    8, True,   1),
+    ("Reverse Layup",1, "Boom Bap",  90, "G Min",  "raw,energetic,boom bap",        "3:00", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  3),
+    ("Unknown",      1, "Boom Bap",  80, "Ab Min", "atmospheric,dark,boom bap",     "2:45", "Non-exclusive",  17.99,  44.99, 179.99,    7, False,  5),
+    ("Word Magicc",  1, "Boom Bap",  65, "C Min",  "slow,melodic,boom bap",         "3:10", "Non-exclusive",  22.99,  54.99, 219.99,    5, False,  6),
+    ("No Danger",    1, "Boom Bap",  84, "D Min",  "smooth,laid-back,boom bap",     "2:50", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   2),
+    ("Sandro Jova",  1, "Boom Bap",  85, "F Min",  "sample-driven,classic,boom bap","3:05", "Non-exclusive",  17.99,  44.99, 179.99,    6, False,  4),
 
     # ── Swayy — Dancehall ────────────────────────────────────────────────────
     ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "dancehall,smooth,melodic",      "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
@@ -239,6 +271,12 @@ COMMENTS = [
     ("In My Head", "ProducedByU", "Trap soul production is next level on this. Emotional and hard at the same time",
      [("YoungTiller", "That's exactly the sound I was chasing 🎧"),
       ("DemoUser",    "Been on repeat since yesterday no cap")]),
+    ("Escargot", "DemoUser", "This boom bap is too clean. That B Minor melody is haunting 🎯",
+     [("ProducedByKyle", "Appreciate it 🙏 more originals dropping soon"),
+      ("Jazzzed",        "The drum pattern on this is exactly how it should be done")]),
+    ("No Danger", "Jazzzed", "Smooth as it gets. That D Minor key choice is doing something special",
+     [("ProducedByKyle", "Glad you caught that — that was a deliberate choice"),
+      ("DemoUser",       "Been bumping this on every drive this week no cap")]),
 ]
 
 
@@ -273,6 +311,10 @@ def seed():
                 email=p["email"],
                 bio=p["bio"],
                 avatar_url=p["avatar_url"],
+                spotify_id=p.get("spotify_id"),
+                spotify_display_name=p.get("spotify_display_name"),
+                spotify_url=p.get("spotify_url"),
+                spotify_artist_url=p.get("spotify_artist_url"),
             )
             u.set_password(p["password"])
             db.session.add(u)
@@ -367,7 +409,7 @@ def seed():
         print("\n   Demo accounts:")
         print("   demo@tunefeed.io             / password123  (listener)")
         print("   prodbyu@tunefeed.io          / password123  (ProducedByU)")
-        print("   producedbykyle@tunefeed.io   / password123  (ProducedByKyle)")
+        print("   producedbykyle@tunefeed.io   / password123  (ProducedByKyle — Spotify Verified)")
         print("   swayy@tunefeed.io            / password123  (Swayy)")
         print("   vocavoice@tunefeed.io        / password123  (VocaVoice)")
         print("   tentens@tunefeed.io          / password123  (TenTens)")
