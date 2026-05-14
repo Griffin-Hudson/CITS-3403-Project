@@ -3,13 +3,14 @@ so callers can't update a user's funds without recording a Transaction."""
 
 from app.models import db, Purchase, Transaction
 
+# ---------------------------------------------------------------------------
+# Tier + payment-method constants (used by checkout flow)
+# ---------------------------------------------------------------------------
 
-# tier identifiers used by the checkout flow
 TIER_LEASE     = 'lease'
 TIER_PREMIUM   = 'premium'
 TIER_EXCLUSIVE = 'exclusive'
 
-# payment methods accepted at checkout
 METHOD_BALANCE = 'balance'
 METHOD_CARD    = 'card'
 
@@ -21,7 +22,7 @@ TIER_LABELS = {
 
 
 def tier_price(beat, tier):
-    """Resolve the price for a given tier on a beat, or None if not offered."""
+    """Return the price for `tier` on `beat`, or None if the tier is not offered."""
     if tier == TIER_LEASE:
         return beat.price
     if tier == TIER_PREMIUM:
@@ -41,11 +42,51 @@ def user_owns_tier(user, beat, tier):
 
 
 def beat_has_exclusive_owner(beat):
-    """True if the exclusive tier on `beat` has already been claimed."""
+    """True if the exclusive tier on `beat` has already been sold."""
     return Purchase.query.filter_by(
         beat_id=beat.id, licence_type=TIER_EXCLUSIVE
     ).first() is not None
 
+
+def purchase_beat(buyer, beat, tier, method):
+    """Write a Purchase row plus matching ledger entries for a completed checkout.
+
+    Balance method deducts funds; card is demo-only and skips the deduction
+    but still records a transaction so My Feeds and producer earnings reflect
+    the sale. Caller must call db.session.commit() after.
+    """
+    price = tier_price(beat, tier)
+    label = TIER_LABELS.get(tier, tier)
+    note  = f'{label} licence — "{beat.title}"'
+
+    if method == METHOD_BALANCE:
+        record_purchase(buyer, price, note=note)
+    else:
+        # card (demo): no real charge, but log so it appears in wallet history
+        db.session.add(Transaction(
+            user_id=buyer.id,
+            type=Transaction.TYPE_PURCHASE,
+            amount=price,
+            balance_after=buyer.balance or 0.0,
+            note=f'{note} (card demo)',
+        ))
+
+    if beat.producer_id and beat.producer_id != buyer.id:
+        record_earning(beat.producer, price, note=f'Sale — "{beat.title}" ({label})')
+
+    purchase = Purchase(
+        buyer_id=buyer.id,
+        beat_id=beat.id,
+        price_paid=price,
+        licence_type=tier,
+    )
+    db.session.add(purchase)
+    return purchase
+
+
+# ---------------------------------------------------------------------------
+# Primitive ledger operations (used directly by routes and purchase_beat above)
+# ---------------------------------------------------------------------------
 
 def top_up(user, amount, note=None):
     """Add `amount` to the user's wallet balance and record a topup transaction."""
@@ -88,41 +129,3 @@ def record_earning(producer, amount, note=None):
     )
     db.session.add(tx)
     return tx
-
-
-def purchase_beat(buyer, beat, tier, method):
-    """Write a Purchase row plus the matching ledger entries for a checkout.
-
-    Balance method deducts funds; card method is a demo and skips the deduction
-    but still records a transaction so My Feeds and the producer's earnings page
-    reflect the sale. Caller is responsible for db.session.commit().
-    """
-    price = tier_price(beat, tier)
-    label = TIER_LABELS.get(tier, tier)
-    note  = f'{label} licence — "{beat.title}"'
-
-    if method == METHOD_BALANCE:
-        record_purchase(buyer, price, note=note)
-    else:
-        # card (demo): no real charge, but log the transaction so it appears
-        # in the buyer's wallet history alongside real purchases
-        tx = Transaction(
-            user_id=buyer.id,
-            type=Transaction.TYPE_PURCHASE,
-            amount=price,
-            balance_after=buyer.balance or 0.0,
-            note=f'{note} (card demo)',
-        )
-        db.session.add(tx)
-
-    if beat.producer_id and beat.producer_id != buyer.id:
-        record_earning(beat.producer, price, note=f'Sale — "{beat.title}" ({label})')
-
-    purchase = Purchase(
-        buyer_id=buyer.id,
-        beat_id=beat.id,
-        price_paid=price,
-        licence_type=tier,
-    )
-    db.session.add(purchase)
-    return purchase
