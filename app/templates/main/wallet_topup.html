@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Top Up — TuneFeed{% endblock %}
+
+{% block extra_css %}
+{# reuses checkout.css — the two flows share the same visual language #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="checkout-page">
+  <div class="checkout-container">
+
+    <header class="checkout-header">
+      <h1 class="checkout-title">Top Up</h1>
+      <p class="checkout-subtitle">Enter your card details to add funds to your balance.</p>
+    </header>
+
+    <div class="checkout-grid">
+
+      {# summary side — fixed amount, no editing here #}
+      <section class="checkout-card checkout-summary">
+        <div class="checkout-card-label">Summary</div>
+
+        <div class="checkout-line">
+          <span class="checkout-line-label">Current balance</span>
+          <span class="checkout-line-value">${{ '%.2f' % balance }}</span>
+        </div>
+
+        <div class="checkout-line">
+          <span class="checkout-line-label">Top-up amount</span>
+          <span class="checkout-line-value">${{ '%.2f' % amount }}</span>
+        </div>
+
+        <div class="checkout-line checkout-total">
+          <span class="checkout-line-label">New balance</span>
+          <span class="checkout-line-value">${{ '%.2f' % (balance + amount) }}</span>
+        </div>
+
+        <a class="checkout-cancel" href="{{ url_for('main.wallet') }}">
+          ← Change amount
+        </a>
+      </section>
+
+      {# payment side — card only #}
+      <section class="checkout-card checkout-payment">
+        <div class="checkout-card-label">Payment</div>
+
+        <form id="checkout-form" method="POST"
+              action="{{ url_for('main.wallet_topup', amount='%.2f' % amount) }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+          <label class="checkout-method is-selected">
+            <input type="radio" name="method" value="card" checked />
+            <span class="checkout-method-body">
+              <span class="checkout-method-title">
+                <i class="bi bi-credit-card-2-front"></i> Card
+              </span>
+              <span class="checkout-method-sub">Visa / Mastercard (demo)</span>
+            </span>
+          </label>
+
+          <div class="checkout-card-fields is-active">
+            <div class="checkout-field">
+              <label for="card-number">Card number</label>
+              <input id="card-number" name="card_number" type="text" inputmode="numeric"
+                     placeholder="4242 4242 4242 4242" autocomplete="cc-number" maxlength="23" />
+            </div>
+            <div class="checkout-field-row">
+              <div class="checkout-field">
+                <label for="card-exp">Expiry</label>
+                <input id="card-exp" name="card_exp" type="text" placeholder="MM/YY"
+                       autocomplete="cc-exp" maxlength="5" />
+              </div>
+              <div class="checkout-field">
+                <label for="card-cvc">CVC</label>
+                <input id="card-cvc" name="card_cvc" type="text" inputmode="numeric"
+                       placeholder="123" autocomplete="cc-csc" maxlength="4" />
+              </div>
+            </div>
+            <p class="checkout-card-note">
+              <i class="bi bi-info-circle"></i> Demo only — no real charge is made.
+            </p>
+          </div>
+
+          <button type="submit" class="checkout-submit">
+            <i class="bi bi-plus-circle"></i> Add ${{ '%.2f' % amount }}
+          </button>
+
+          <a class="checkout-cancel" href="{{ url_for('main.wallet') }}">
+            Cancel
+          </a>
+        </form>
+      </section>
+
+    </div>
+  </div>
+
+  {# same demo modal as checkout — consistent confirmation step before submit #}
+  <div class="checkout-modal" id="card-demo-modal" hidden>
+    <div class="checkout-modal-backdrop" data-modal-close></div>
+    <div class="checkout-modal-card" role="dialog" aria-modal="true" aria-labelledby="card-demo-title">
+      <h2 id="card-demo-title" class="checkout-modal-title">
+        <i class="bi bi-shield-check"></i> Demo payment
+      </h2>
+      <p class="checkout-modal-body">
+        This is a demonstration top-up. No real card details are processed and
+        no funds will be charged. Click <strong>Confirm</strong> to add
+        <strong>${{ '%.2f' % amount }}</strong> to your wallet balance.
+      </p>
+      <div class="checkout-modal-actions">
+        <button type="button" class="checkout-modal-cancel" data-modal-close>Cancel</button>
+        <button type="button" class="checkout-modal-confirm" id="card-demo-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  const form = document.getElementById('checkout-form');
+  const modal = document.getElementById('card-demo-modal');
+  const confirmBtn = document.getElementById('card-demo-confirm');
+
+  // cosmetic formatters — identical to checkout page
+  const cardNumber = document.getElementById('card-number');
+  if (cardNumber) {
+    cardNumber.addEventListener('input', () => {
+      const digits = cardNumber.value.replace(/\D/g, '').slice(0, 16);
+      cardNumber.value = digits.replace(/(.{4})/g, '$1 ').trim();
+    });
+  }
+  const cardExp = document.getElementById('card-exp');
+  if (cardExp) {
+    cardExp.addEventListener('input', () => {
+      const digits = cardExp.value.replace(/\D/g, '').slice(0, 4);
+      cardExp.value = digits.length > 2 ? digits.slice(0, 2) + '/' + digits.slice(2) : digits;
+    });
+  }
+  const cardCvc = document.getElementById('card-cvc');
+  if (cardCvc) {
+    cardCvc.addEventListener('input', () => {
+      cardCvc.value = cardCvc.value.replace(/\D/g, '').slice(0, 4);
+    });
+  }
+
+  let confirmed = false;
+  form.addEventListener('submit', (e) => {
+    if (confirmed) return;
+    e.preventDefault();
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    confirmed = true;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    form.requestSubmit();
+  });
+
+  modal.querySelectorAll('[data-modal-close]').forEach((el) => {
+    el.addEventListener('click', () => {
+      modal.hidden = true;
+      document.body.style.overflow = '';
+    });
+  });
+}());
+</script>
+{% endblock %}

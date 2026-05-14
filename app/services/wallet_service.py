@@ -1,7 +1,50 @@
 """Wallet operations — keeps balance/earnings updates and ledger writes together
 so callers can't update a user's funds without recording a Transaction."""
 
-from app.models import db, Transaction
+from app.models import db, Purchase, Transaction
+
+
+# tier identifiers used by the checkout flow
+TIER_LEASE     = 'lease'
+TIER_PREMIUM   = 'premium'
+TIER_EXCLUSIVE = 'exclusive'
+
+# payment methods accepted at checkout
+METHOD_BALANCE = 'balance'
+METHOD_CARD    = 'card'
+
+TIER_LABELS = {
+    TIER_LEASE:     'Lease',
+    TIER_PREMIUM:   'Premium',
+    TIER_EXCLUSIVE: 'Exclusive',
+}
+
+
+def tier_price(beat, tier):
+    """Resolve the price for a given tier on a beat, or None if not offered."""
+    if tier == TIER_LEASE:
+        return beat.price
+    if tier == TIER_PREMIUM:
+        return beat.premium_price
+    if tier == TIER_EXCLUSIVE:
+        return beat.exclusive_price
+    return None
+
+
+def user_owns_tier(user, beat, tier):
+    """True if `user` already holds this tier on `beat`."""
+    if not user or not user.is_authenticated:
+        return False
+    return Purchase.query.filter_by(
+        buyer_id=user.id, beat_id=beat.id, licence_type=tier
+    ).first() is not None
+
+
+def beat_has_exclusive_owner(beat):
+    """True if the exclusive tier on `beat` has already been claimed."""
+    return Purchase.query.filter_by(
+        beat_id=beat.id, licence_type=TIER_EXCLUSIVE
+    ).first() is not None
 
 
 def top_up(user, amount, note=None):
@@ -45,3 +88,41 @@ def record_earning(producer, amount, note=None):
     )
     db.session.add(tx)
     return tx
+
+
+def purchase_beat(buyer, beat, tier, method):
+    """Write a Purchase row plus the matching ledger entries for a checkout.
+
+    Balance method deducts funds; card method is a demo and skips the deduction
+    but still records a transaction so My Feeds and the producer's earnings page
+    reflect the sale. Caller is responsible for db.session.commit().
+    """
+    price = tier_price(beat, tier)
+    label = TIER_LABELS.get(tier, tier)
+    note  = f'{label} licence — "{beat.title}"'
+
+    if method == METHOD_BALANCE:
+        record_purchase(buyer, price, note=note)
+    else:
+        # card (demo): no real charge, but log the transaction so it appears
+        # in the buyer's wallet history alongside real purchases
+        tx = Transaction(
+            user_id=buyer.id,
+            type=Transaction.TYPE_PURCHASE,
+            amount=price,
+            balance_after=buyer.balance or 0.0,
+            note=f'{note} (card demo)',
+        )
+        db.session.add(tx)
+
+    if beat.producer_id and beat.producer_id != buyer.id:
+        record_earning(beat.producer, price, note=f'Sale — "{beat.title}" ({label})')
+
+    purchase = Purchase(
+        buyer_id=buyer.id,
+        beat_id=beat.id,
+        price_paid=price,
+        licence_type=tier,
+    )
+    db.session.add(purchase)
+    return purchase

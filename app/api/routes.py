@@ -11,7 +11,7 @@ from flask import Blueprint, jsonify, request, session
 from flask_login import current_user
 
 from app.models import (db, Beat, User, Comment, BeatPlayEvent, CommentReport,
-                        Like, saved_beats, follows, comment_likes, comment_dislikes)
+                        Like, Purchase, saved_beats, follows, comment_likes, comment_dislikes)
 from app.services.feed_service import get_feed_beats
 
 api = Blueprint('api', __name__)
@@ -40,10 +40,11 @@ def feed():
     beats = get_feed_beats(current_user, limit=per_page + 1, exclude_ids=exclude_ids)
     page_beats = beats[:per_page]
 
-    # Batch-load interaction states in 3 queries instead of 3×N
+    # Batch-load interaction states in a handful of queries instead of N per beat
     liked_ids = set()
     saved_ids = set()
     following_ids = set()
+    owned_tiers = {}
     if current_user.is_authenticated and page_beats:
         beat_ids = [b.id for b in page_beats]
         producer_ids = list({b.producer_id for b in page_beats if b.producer_id})
@@ -59,6 +60,12 @@ def feed():
             db.session.query(follows.c.followed_id)
             .filter(follows.c.follower_id == current_user.id, follows.c.followed_id.in_(producer_ids))
             .all()}
+        owned_rows = (db.session.query(Purchase.beat_id, Purchase.licence_type)
+                      .filter(Purchase.buyer_id == current_user.id,
+                              Purchase.beat_id.in_(beat_ids))
+                      .all())
+        for bid, lic in owned_rows:
+            owned_tiers.setdefault(bid, set()).add(lic)
 
     result = []
     for b in page_beats:
@@ -86,6 +93,8 @@ def feed():
             'is_saved':            b.id in saved_ids,
             'is_following':        b.producer_id in following_ids,
             'is_trending':         b.is_trending,
+            'owned_tiers':         sorted(owned_tiers.get(b.id, [])),
+            'is_own_beat':         current_user.is_authenticated and b.producer_id == current_user.id,
         })
 
     return jsonify({'beats': result, 'has_next': len(beats) > per_page, 'page': page})

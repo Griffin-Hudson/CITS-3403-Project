@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="checkout-page">
+  <div class="checkout-container">
+
+    <header class="checkout-header">
+      <h1 class="checkout-title">Checkout</h1>
+      <p class="checkout-subtitle">Review the licence, pick a payment method, and confirm.</p>
+    </header>
+
+    <div class="checkout-grid">
+
+      {# summary card — beat + tier + price #}
+      <section class="checkout-card checkout-summary">
+        <div class="checkout-card-label">Order</div>
+
+        <div class="checkout-beat-row">
+          <div class="checkout-cover">
+            {% if beat.cover_url %}
+              <img src="{{ beat.cover_url }}" alt="" />
+            {% else %}
+              <i class="bi bi-music-note-beamed"></i>
+            {% endif %}
+          </div>
+          <div class="checkout-beat-meta">
+            <div class="checkout-beat-title">{{ beat.title }}</div>
+            <a class="checkout-producer" href="{{ url_for('main.profile', user_id=beat.producer_id) }}">
+              @{{ beat.producer.username }}
+            </a>
+            <div class="checkout-beat-tags">
+              {% if beat.genre %}<span class="checkout-tag">{{ beat.genre }}</span>{% endif %}
+              {% if beat.bpm %}<span class="checkout-tag">{{ beat.bpm }} BPM</span>{% endif %}
+              {% if beat.key %}<span class="checkout-tag">{{ beat.key }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="checkout-line">
+          <span class="checkout-line-label">Licence</span>
+          <span class="checkout-line-value checkout-tier checkout-tier-{{ tier }}">{{ tier_label }}</span>
+        </div>
+
+        <div class="checkout-line checkout-total">
+          <span class="checkout-line-label">Total</span>
+          <span class="checkout-line-value">${{ '%.2f' % price }}</span>
+        </div>
+      </section>
+
+      {# payment form — balance vs card #}
+      <section class="checkout-card checkout-payment">
+        <div class="checkout-card-label">Payment</div>
+
+        <form id="checkout-form" method="POST" action="{{ url_for('main.checkout', beat_id=beat.id, tier=tier) }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+          <label class="checkout-method {% if selected_method == 'balance' %}is-selected{% endif %}">
+            <input type="radio" name="method" value="balance"
+                   {% if selected_method == 'balance' %}checked{% endif %} />
+            <span class="checkout-method-body">
+              <span class="checkout-method-title">
+                <i class="bi bi-wallet2"></i> Balance
+              </span>
+              <span class="checkout-method-sub">Available: ${{ '%.2f' % balance }}</span>
+            </span>
+          </label>
+
+          <label class="checkout-method {% if selected_method == 'card' %}is-selected{% endif %}">
+            <input type="radio" name="method" value="card"
+                   {% if selected_method == 'card' %}checked{% endif %} />
+            <span class="checkout-method-body">
+              <span class="checkout-method-title">
+                <i class="bi bi-credit-card-2-front"></i> Card
+              </span>
+              <span class="checkout-method-sub">Visa / Mastercard (demo)</span>
+            </span>
+          </label>
+
+          {# card fields — shown only when card is selected; values aren't sent to backend #}
+          <div class="checkout-card-fields" data-show-when="card">
+            <div class="checkout-field">
+              <label for="card-number">Card number</label>
+              <input id="card-number" name="card_number" type="text" inputmode="numeric"
+                     placeholder="4242 4242 4242 4242" autocomplete="cc-number" maxlength="23" />
+            </div>
+            <div class="checkout-field-row">
+              <div class="checkout-field">
+                <label for="card-exp">Expiry</label>
+                <input id="card-exp" name="card_exp" type="text" placeholder="MM/YY"
+                       autocomplete="cc-exp" maxlength="5" />
+              </div>
+              <div class="checkout-field">
+                <label for="card-cvc">CVC</label>
+                <input id="card-cvc" name="card_cvc" type="text" inputmode="numeric"
+                       placeholder="123" autocomplete="cc-csc" maxlength="4" />
+              </div>
+            </div>
+            <p class="checkout-card-note">
+              <i class="bi bi-info-circle"></i> Demo only — no real charge is made.
+            </p>
+          </div>
+
+          {% if error %}
+            <div class="checkout-error">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span>{{ error }}</span>
+              {% if 'Insufficient' in error %}
+                <a class="checkout-error-link" href="{{ url_for('main.wallet') }}" target="_blank" rel="noopener">
+                  Top up →
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <button type="submit" class="checkout-submit">
+            <i class="bi bi-lock-fill"></i> Pay ${{ '%.2f' % price }}
+          </button>
+
+          <a class="checkout-cancel" href="{{ url_for('main.beat_detail', beat_id=beat.id) }}">
+            Cancel
+          </a>
+        </form>
+      </section>
+
+    </div>
+  </div>
+
+  {# demo confirmation modal — shown after card submit, before form actually POSTs #}
+  <div class="checkout-modal" id="card-demo-modal" hidden>
+    <div class="checkout-modal-backdrop" data-modal-close></div>
+    <div class="checkout-modal-card" role="dialog" aria-modal="true" aria-labelledby="card-demo-title">
+      <h2 id="card-demo-title" class="checkout-modal-title">
+        <i class="bi bi-shield-check"></i> Demo payment
+      </h2>
+      <p class="checkout-modal-body">
+        This is a demonstration checkout. No real card details are processed and
+        no funds will be charged. Click <strong>Confirm</strong> to complete the
+        mock purchase and add this beat to your library.
+      </p>
+      <div class="checkout-modal-actions">
+        <button type="button" class="checkout-modal-cancel" data-modal-close>Cancel</button>
+        <button type="button" class="checkout-modal-confirm" id="card-demo-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  'use strict';
+
+  const form = document.getElementById('checkout-form');
+  const methodRadios = form.querySelectorAll('input[name="method"]');
+  const cardFields = form.querySelector('.checkout-card-fields');
+  const modal = document.getElementById('card-demo-modal');
+  const confirmBtn = document.getElementById('card-demo-confirm');
+
+  // toggle card fields visibility based on selected method
+  function syncMethod() {
+    const method = form.querySelector('input[name="method"]:checked').value;
+    cardFields.classList.toggle('is-active', method === 'card');
+    form.querySelectorAll('.checkout-method').forEach((el) => {
+      const radio = el.querySelector('input[name="method"]');
+      el.classList.toggle('is-selected', radio.checked);
+    });
+  }
+  methodRadios.forEach((r) => r.addEventListener('change', syncMethod));
+  syncMethod();
+
+  // basic visual formatters for the demo card fields — purely cosmetic
+  const cardNumber = document.getElementById('card-number');
+  if (cardNumber) {
+    cardNumber.addEventListener('input', () => {
+      const digits = cardNumber.value.replace(/\D/g, '').slice(0, 16);
+      cardNumber.value = digits.replace(/(.{4})/g, '$1 ').trim();
+    });
+  }
+  const cardExp = document.getElementById('card-exp');
+  if (cardExp) {
+    cardExp.addEventListener('input', () => {
+      const digits = cardExp.value.replace(/\D/g, '').slice(0, 4);
+      cardExp.value = digits.length > 2 ? digits.slice(0, 2) + '/' + digits.slice(2) : digits;
+    });
+  }
+  const cardCvc = document.getElementById('card-cvc');
+  if (cardCvc) {
+    cardCvc.addEventListener('input', () => {
+      cardCvc.value = cardCvc.value.replace(/\D/g, '').slice(0, 4);
+    });
+  }
+
+  // intercept submit on card method — show demo modal, real submit happens on Confirm
+  let confirmed = false;
+  form.addEventListener('submit', (e) => {
+    const method = form.querySelector('input[name="method"]:checked').value;
+    if (method !== 'card' || confirmed) return;
+    e.preventDefault();
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    confirmed = true;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    form.requestSubmit();
+  });
+
+  modal.querySelectorAll('[data-modal-close]').forEach((el) => {
+    el.addEventListener('click', () => {
+      modal.hidden = true;
+      document.body.style.overflow = '';
+    });
+  });
+}());
+</script>
+{% endblock %}
