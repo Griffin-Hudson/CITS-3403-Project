@@ -44,6 +44,17 @@ class TestRegister:
         }, follow_redirects=True)
         assert b'already' in r.data.lower()
 
+    def test_register_mismatched_passwords_rejected(self, client):
+        r = client.post('/register', data={
+            'username': 'mismatch',
+            'email': 'mismatch@example.com',
+            'password': 'MatchPass1!',
+            'confirm_password': 'DifferentPass1!',
+        }, follow_redirects=True)
+        assert r.status_code == 200
+        body = r.data.lower()
+        assert b'match' in body or b'must match' in body or b'confirm' in body
+
     def test_register_duplicate_email_rejected(self, client, seeded_db):
         r = client.post('/register', data={
             'username': 'brandnew',

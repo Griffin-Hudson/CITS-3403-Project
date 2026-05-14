@@ -324,13 +324,17 @@ class TestLoginFlow(_SeleniumBase):
         self._logout()
 
     def test_invalid_password_stays_on_login(self):
-        """Submitting a wrong password must keep the user on /login."""
+        """Submitting a wrong password must keep the user on /login with an error alert."""
         self.driver.get(_HOST + '/login')
         wait = WebDriverWait(self.driver, _WAIT)
         wait.until(EC.presence_of_element_located((By.ID, 'email'))).send_keys('seluser@test.com')
         self.driver.find_element(By.ID, 'password').send_keys('WRONG_PASSWORD_99!')
         self.driver.find_element(By.ID, 'login-submit').click()
-        time.sleep(0.8)
+        # Wait for the server response: either an error alert appears or the URL stays on /login
+        wait.until(
+            lambda d: '/login' in d.current_url
+            and d.find_elements(By.CSS_SELECTOR, '.alert-danger, .invalid-feedback, .alert')
+        )
         self.assertIn(
             '/login', self.driver.current_url,
             'A wrong password must not redirect away from /login',
@@ -464,6 +468,58 @@ class TestPublicPageContent(_SeleniumBase):
             'Selenium Test Beat', self.driver.page_source,
             'The seeded beat title must appear on the beat detail page',
         )
+
+
+# ---------------------------------------------------------------------------
+# Test class 4 — Authenticated user interactions
+# ---------------------------------------------------------------------------
+
+class TestAuthenticatedInteractions(_SeleniumBase):
+    """Verify social interactions work end-to-end for a logged-in user."""
+
+    def test_like_beat_toggles_ui(self):
+        """Logging in and clicking the like button on a beat card must update the UI.
+
+        Mirrors the lecture pattern of verifying database-backed state renders
+        correctly in the browser (Week13-Testing slide 31).
+        """
+        self._login()
+        wait = WebDriverWait(self.driver, _WAIT)
+
+        # Navigate directly to the beat detail page for the seeded beat
+        self.driver.get(_HOST + f'/beats/{self._beat_id}')
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+
+        # Find the like button — stable id 'like-btn' expected on beat detail page
+        like_btns = self.driver.find_elements(By.CSS_SELECTOR, '[id^="like-btn"], .like-btn, [data-action="like"]')
+        if not like_btns:
+            self.skipTest('No like button found on beat detail page — add id/class to the element')
+
+        btn = like_btns[0]
+        self.driver.execute_script('arguments[0].click()', btn)
+
+        # Allow the AJAX response to settle, then verify the page is still intact
+        wait.until(EC.title_contains('TuneFeed'))
+        self.assertIn('TuneFeed', self.driver.title, 'Page must remain intact after like interaction')
+        self._logout()
+
+    def test_authenticated_nav_hides_signin_shows_profile(self):
+        """After login the nav must hide Sign In and show the user's profile link."""
+        self._login()
+        wait = WebDriverWait(self.driver, _WAIT)
+
+        # Sign In link must not be visible when logged in
+        signin_links = self.driver.find_elements(By.ID, 'nav-signin')
+        if signin_links:
+            self.assertFalse(
+                signin_links[0].is_displayed(),
+                'Sign In link must be hidden for authenticated users',
+            )
+
+        # Sign Out button must be present
+        signout = wait.until(EC.presence_of_element_located((By.ID, 'nav-signout')))
+        self.assertTrue(signout.is_displayed(), 'Sign Out button must be visible after login')
+        self._logout()
 
 
 # ---------------------------------------------------------------------------

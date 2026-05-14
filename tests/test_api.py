@@ -3,6 +3,63 @@ import json
 from tests.conftest import login, logout
 
 
+class TestSearchAPI:
+    def test_search_api_returns_json(self, client):
+        r = client.get('/api/search')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert 'beats' in data
+        assert 'producers' in data
+
+    def test_search_api_finds_seeded_beat(self, client, seeded_db):
+        r = client.get('/api/search?q=Test')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        titles = [b['title'] for b in data['beats']]
+        assert 'Test Beat' in titles
+
+    def test_search_api_empty_query_returns_empty(self, client):
+        r = client.get('/api/search?q=')
+        data = json.loads(r.data)
+        assert data['beats'] == []
+        assert data['producers'] == []
+
+
+class TestFollowAPI:
+    def test_follow_toggle(self, client, seeded_db, app):
+        """Follow and unfollow a producer; verify JSON shape and toggled state."""
+        # Create a second user to follow — cannot follow self (seeded_db['user_id'])
+        with app.app_context():
+            from app.models import db as _db, User as _User
+            other = _User(username='followtarget', email='followtarget@test.com')
+            other.set_password('FollowPass1!')
+            _db.session.add(other)
+            _db.session.commit()
+            other_id = other.id
+        assert other_id != seeded_db['user_id'], 'Test user must be different from the follow target'
+
+        login(client)
+        r = client.post(f'/api/producers/{other_id}/follow')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert 'following' in data
+        assert 'followers_count' in data
+        first_following = data['following']
+
+        r2 = client.post(f'/api/producers/{other_id}/follow')
+        data2 = json.loads(r2.data)
+        assert data2['following'] != first_following, 'Second call must toggle the follow state'
+        logout(client)
+
+    def test_cannot_follow_self(self, client, seeded_db):
+        """A user must not be able to follow themselves."""
+        login(client)
+        user_id = seeded_db['user_id']
+        r = client.post(f'/api/producers/{user_id}/follow')
+        assert r.status_code == 400, 'Following yourself must return 400'
+        logout(client)
+
+
 class TestUnauthenticatedAPI:
     def test_like_requires_auth(self, client, seeded_db):
         logout(client)
@@ -77,8 +134,8 @@ class TestPlayAPI:
         r1 = client.post(f'/api/beats/{beat_id}/play')
         r2 = client.post(f'/api/beats/{beat_id}/play')
         d1, d2 = json.loads(r1.data), json.loads(r2.data)
-        # Second play within the dedup window must not be counted
-        assert not d2['counted']
+        assert d1['counted'], 'First play must be counted'
+        assert not d2['counted'], 'Second play within the dedup window must not be counted'
 
 
 class TestFeedAPI:
@@ -179,4 +236,81 @@ class TestCommentsAPI:
         assert r.status_code == 200
         data = json.loads(r.data)
         assert data['deleted'] is True
+        logout(client)
+
+    def test_delete_comment_by_non_author_forbidden(self, client, seeded_db, app):
+        """A logged-in user who is NOT the comment author must receive 403."""
+        login(client)
+        beat_id = seeded_db['beat_id']
+        rc = client.post(f'/api/beats/{beat_id}/comments', json={'body': 'Owner comment'})
+        comment_id = json.loads(rc.data)['id']
+        logout(client)
+
+        # Register + login as a different user, then attempt the delete
+        client.post('/register', data={
+            'username': 'attacker99', 'email': 'attacker99@test.com',
+            'password': 'AttackPass1!', 'confirm_password': 'AttackPass1!',
+        })
+        client.post('/login', data={'email': 'attacker99@test.com', 'password': 'AttackPass1!'})
+        r = client.delete(f'/api/comments/{comment_id}')
+        assert r.status_code == 403, 'Non-author must not be allowed to delete another user\'s comment'
+        data = json.loads(r.data)
+        assert 'error' in data
+        logout(client)
+
+    def test_dislike_comment_toggle(self, client, seeded_db):
+        """Dislike a comment, verify count increments; dislike again, verify it toggles off."""
+        login(client)
+        beat_id = seeded_db['beat_id']
+        rc = client.post(f'/api/beats/{beat_id}/comments', json={'body': 'Dislike me'})
+        comment_id = json.loads(rc.data)['id']
+
+        r = client.post(f'/api/comments/{comment_id}/dislike')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['disliked'] is True
+        assert data['dislikes_count'] == 1
+
+        r2 = client.post(f'/api/comments/{comment_id}/dislike')
+        data2 = json.loads(r2.data)
+        assert data2['disliked'] is False, 'Second dislike must toggle off'
+        assert data2['dislikes_count'] == 0
+        logout(client)
+
+    def test_dislike_removes_existing_like(self, client, seeded_db):
+        """Disliking a previously liked comment must remove the like (mutually exclusive)."""
+        login(client)
+        beat_id = seeded_db['beat_id']
+        rc = client.post(f'/api/beats/{beat_id}/comments', json={'body': 'Like then dislike'})
+        comment_id = json.loads(rc.data)['id']
+
+        client.post(f'/api/comments/{comment_id}/like')
+        r = client.post(f'/api/comments/{comment_id}/dislike')
+        data = json.loads(r.data)
+        assert data['disliked'] is True
+        assert data['likes_count'] == 0, 'Like must be removed when dislike is applied'
+        logout(client)
+
+    def test_report_and_unreport_round_trip(self, client, seeded_db):
+        """Reporting a comment increments count; un-reporting decrements it back."""
+        login(client)
+        beat_id = seeded_db['beat_id']
+        rc = client.post(f'/api/beats/{beat_id}/comments', json={'body': 'Report target'})
+        comment_id = json.loads(rc.data)['id']
+
+        r = client.post(f'/api/comments/{comment_id}/report', json={'reason': 'spam'})
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['reported'] is True
+        assert data['report_count'] == 1
+
+        # Duplicate report must return 409
+        r_dup = client.post(f'/api/comments/{comment_id}/report', json={'reason': 'spam'})
+        assert r_dup.status_code == 409
+
+        # Un-report must decrement back to 0
+        r_del = client.delete(f'/api/comments/{comment_id}/report')
+        assert r_del.status_code == 200
+        data_del = json.loads(r_del.data)
+        assert data_del['reported'] is False
         logout(client)

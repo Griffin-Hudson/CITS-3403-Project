@@ -27,11 +27,11 @@ def client(app):
         yield c
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def seeded_db(app):
-    """Insert one user and one beat once for the whole test session."""
+    """Insert one user and one beat; tears down after each test to prevent state bleed."""
     with app.app_context():
-        user = User(username='testuser', email='test@example.com')
+        user = User(username='testuser', email='test@example.com', role='producer')
         user.set_password('testpass')
         _db.session.add(user)
         _db.session.flush()
@@ -45,6 +45,10 @@ def seeded_db(app):
         _db.session.add(beat)
         _db.session.commit()
         yield {'user_id': user.id, 'beat_id': beat.id}
+
+        _db.session.remove()
+        _db.drop_all()
+        _db.create_all()
 
 
 def login(client, email='test@example.com', password='testpass'):
