@@ -724,6 +724,62 @@ class TestSafeUrlValidator(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 13. Spotify connection fields
+# ---------------------------------------------------------------------------
+
+class TestSpotifyUser(_AppTestCase):
+    """User.spotify_connected, spotify fields — 6 tests."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = _make_user()
+        db.session.add(self.user)
+        db.session.commit()
+
+    def test_spotify_not_connected_by_default(self):
+        self.assertFalse(
+            self.user.spotify_connected,
+            'A new user must not have Spotify connected by default',
+        )
+
+    def test_spotify_id_none_by_default(self):
+        self.assertIsNone(self.user.spotify_id)
+
+    def test_spotify_connected_true_when_id_set(self):
+        self.user.spotify_id = 'test_spotify_id'
+        db.session.commit()
+        self.assertTrue(self.user.spotify_connected)
+
+    def test_spotify_display_name_persists(self):
+        self.user.spotify_id           = 'abc123'
+        self.user.spotify_display_name = 'TestArtist'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_display_name, 'TestArtist')
+
+    def test_spotify_url_persists(self):
+        self.user.spotify_id  = 'abc123'
+        self.user.spotify_url = 'https://open.spotify.com/user/abc123'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_url, 'https://open.spotify.com/user/abc123')
+
+    def test_spotify_artist_url_persists(self):
+        self.user.spotify_id         = 'abc123'
+        self.user.spotify_artist_url = 'https://open.spotify.com/artist/abc123'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_artist_url, 'https://open.spotify.com/artist/abc123')
+
+    def test_clearing_spotify_id_disconnects(self):
+        self.user.spotify_id = 'abc123'
+        db.session.commit()
+        self.user.spotify_id = None
+        db.session.commit()
+        self.assertFalse(self.user.spotify_connected)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 

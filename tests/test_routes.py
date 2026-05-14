@@ -97,6 +97,27 @@ class TestDiscoverRoute:
         r = client.get('/discover?genre=Hip-Hop')
         assert r.status_code == 200
 
+    def test_discover_cards_link_to_focused_feed(self, client, seeded_db):
+        r = client.get('/discover')
+        assert r.status_code == 200
+        assert f'/feed?beat={seeded_db["beat_id"]}'.encode() in r.data
+
+
+class TestFeedRoute:
+    def test_focused_feed_renders_requested_beat_first(self, client, seeded_db):
+        beat_id = seeded_db['beat_id']
+        r = client.get(f'/feed?beat={beat_id}')
+        assert r.status_code == 200
+        first_card = r.data.find(b'<div class="feed-card"')
+        assert first_card != -1, 'Feed must render at least one card'
+        focused_attr = f'data-beat-id="{beat_id}"'.encode()
+        assert r.data.find(focused_attr, first_card, first_card + 300) != -1, \
+            'Focused beat must be the first feed card'
+
+    def test_focused_feed_missing_beat_404s(self, client):
+        r = client.get('/feed?beat=999999')
+        assert r.status_code == 404
+
 
 class TestSearchRoute:
     def test_search_empty_query_loads(self, client):
@@ -335,6 +356,85 @@ class TestCheckoutRoute:
         r = client.get(f'/checkout/{beat_id}?tier=lease', follow_redirects=True)
         assert r.status_code == 200
         assert b'already own' in r.data.lower()
+        logout(client)
+
+
+class TestSpotifyRoutes:
+    def test_spotify_connect_requires_auth(self, client):
+        """Unauthenticated GET /spotify/connect must redirect to login."""
+        logout(client)
+        r = client.get('/spotify/connect', follow_redirects=False)
+        assert r.status_code == 302
+        assert '/login' in r.headers.get('Location', '')
+
+    def test_spotify_connect_without_config_flashes_warning(self, client, seeded_db, app):
+        """When SPOTIFY_CLIENT_ID is empty, connect must redirect to edit_profile with a warning."""
+        original = app.config.get('SPOTIFY_CLIENT_ID', '')
+        app.config['SPOTIFY_CLIENT_ID'] = ''
+        try:
+            login(client)
+            r = client.get('/spotify/connect', follow_redirects=True)
+            assert r.status_code == 200
+            assert b'not configured' in r.data.lower() or b'spotify' in r.data.lower()
+            logout(client)
+        finally:
+            app.config['SPOTIFY_CLIENT_ID'] = original
+
+    def test_spotify_connect_with_client_id_redirects_to_spotify(self, client, seeded_db, app):
+        """When SPOTIFY_CLIENT_ID is set, connect must redirect to accounts.spotify.com."""
+        original = app.config.get('SPOTIFY_CLIENT_ID', '')
+        app.config['SPOTIFY_CLIENT_ID'] = 'demo_client_id'
+        try:
+            login(client)
+            r = client.get('/spotify/connect', follow_redirects=False)
+            assert r.status_code == 302
+            assert 'accounts.spotify.com' in r.headers.get('Location', '')
+            logout(client)
+        finally:
+            app.config['SPOTIFY_CLIENT_ID'] = original
+
+    def test_spotify_disconnect_requires_auth(self, client):
+        """Unauthenticated POST /spotify/disconnect must redirect to login."""
+        logout(client)
+        r = client.post('/spotify/disconnect', follow_redirects=False)
+        assert r.status_code == 302
+        assert '/login' in r.headers.get('Location', '')
+
+    def test_spotify_disconnect_clears_spotify_fields(self, client, seeded_db, app):
+        """POST /spotify/disconnect must null out all Spotify fields on the user."""
+        # Create a fresh user with Spotify already connected so there is no stale
+        # identity-map entry when we login and call disconnect.
+        with app.app_context():
+            from app.models import db as _db, User as _User
+            spotify_user = _User(
+                username='spotifydisco',
+                email='spotifydisco@example.com',
+                spotify_id='some_id',
+                spotify_display_name='SomeArtist',
+                spotify_url='https://open.spotify.com/user/some_id',
+            )
+            spotify_user.set_password('testpass')
+            _db.session.add(spotify_user)
+            _db.session.commit()
+            disco_id = spotify_user.id
+
+        client.post('/login', data={'email': 'spotifydisco@example.com', 'password': 'testpass'})
+        r = client.post('/spotify/disconnect', follow_redirects=True)
+        assert r.status_code == 200
+
+        with app.app_context():
+            from app.models import db as _db2, User as _User2
+            u = _db2.session.get(_User2, disco_id)
+            assert u.spotify_id is None, 'spotify_id must be cleared after disconnect'
+            assert u.spotify_display_name is None
+        client.post('/logout')
+
+    def test_spotify_callback_invalid_state_rejected(self, client, seeded_db):
+        """Callback with mismatched state must reject and flash a danger message."""
+        login(client)
+        r = client.get('/spotify/callback?code=abc&state=bad_state', follow_redirects=True)
+        assert r.status_code == 200
+        assert b'invalid state' in r.data.lower() or b'failed' in r.data.lower()
         logout(client)
 
 

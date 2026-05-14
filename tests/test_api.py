@@ -1,6 +1,62 @@
-"""Tests for the JSON API endpoints: like, save, follow, play, feed."""
+"""Tests for the JSON API endpoints: like, save, follow, play, feed, spotify."""
 import json
 from tests.conftest import login, logout
+
+
+class TestSpotifyStatusAPI:
+    def test_spotify_status_requires_auth(self, client):
+        """Unauthenticated request to /api/spotify/status must return 401."""
+        logout(client)
+        r = client.get('/api/spotify/status')
+        assert r.status_code == 401
+        data = json.loads(r.data)
+        assert 'error' in data
+
+    def test_spotify_status_not_connected_by_default(self, client, seeded_db):
+        """A freshly seeded user has no Spotify connection."""
+        login(client)
+        r = client.get('/api/spotify/status')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['connected'] is False
+        assert data['display_name'] == ''
+        assert data['spotify_url'] == ''
+        logout(client)
+
+    def test_spotify_status_connected_after_db_set(self, client, seeded_db, app):
+        """Status reflects True for a user whose spotify_id is set at creation time."""
+        with app.app_context():
+            from app.models import db as _db, User as _User
+            # Create a brand-new user with Spotify already set so there is no stale
+            # identity-map entry to work around across context boundaries.
+            spotify_user = _User(
+                username='spotifytest',
+                email='spotifytest@example.com',
+                spotify_id='test_id_42',
+                spotify_display_name='TestArtist',
+                spotify_url='https://open.spotify.com/user/test_id_42',
+            )
+            spotify_user.set_password('testpass')
+            _db.session.add(spotify_user)
+            _db.session.commit()
+
+        client.post('/login', data={'email': 'spotifytest@example.com', 'password': 'testpass'})
+        r = client.get('/api/spotify/status')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['connected'] is True
+        assert data['display_name'] == 'TestArtist'
+        assert 'spotify.com' in data['spotify_url']
+        client.post('/logout')
+
+    def test_spotify_status_shape(self, client, seeded_db):
+        """Response must contain the documented keys regardless of connection state."""
+        login(client)
+        r = client.get('/api/spotify/status')
+        data = json.loads(r.data)
+        for key in ('connected', 'display_name', 'spotify_url', 'spotify_artist_url'):
+            assert key in data, f'Missing key: {key}'
+        logout(client)
 
 
 class TestSearchAPI:
