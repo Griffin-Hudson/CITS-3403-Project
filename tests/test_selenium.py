@@ -517,10 +517,10 @@ class TestAuthenticatedInteractions(_SeleniumBase):
             )
 
         # Sign Out button must be present
-        menu_btn = wait.until(EC.presence_of_element_located((By.ID, 'nav-profile-menu-button')))
-        self.driver.execute_script("arguments[0].click();", menu_btn)
-        signout = wait.until(EC.presence_of_element_located((By.ID, 'nav-signout')))
-        self.assertTrue(signout.is_displayed(), 'Sign Out button must be visible after login')
+        menu_btn = wait.until(EC.visibility_of_element_located((By.ID, 'nav-profile-menu-button')))
+        self.driver.execute_script("arguments[0].focus();", menu_btn)
+        signout = wait.until(EC.visibility_of_element_located((By.ID, 'nav-signout')))
+        self.assertTrue(signout.is_displayed(), 'Sign Out button must be visible after opening the profile menu')
         self._logout()
 
 
