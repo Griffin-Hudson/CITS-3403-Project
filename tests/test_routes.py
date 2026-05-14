@@ -61,6 +61,12 @@ class TestBeatDetailRoute:
         r = client.get(f'/beats/{beat_id}')
         assert r.status_code == 200
 
+    def test_beat_detail_links_available_tier_to_checkout(self, client, seeded_db):
+        beat_id = seeded_db['beat_id']
+        r = client.get(f'/beats/{beat_id}')
+        assert r.status_code == 200
+        assert f'/checkout/{beat_id}?tier=lease'.encode() in r.data
+
     def test_beat_detail_404_for_missing_beat(self, client):
         r = client.get('/beats/999999')
         assert r.status_code == 404
@@ -104,6 +110,23 @@ class TestSearchRoute:
     def test_search_with_genre_filter(self, client):
         r = client.get('/search?genre=hip-hop')
         assert r.status_code == 200
+
+
+class TestErrorPages:
+    def test_missing_page_uses_custom_404(self, client):
+        r = client.get('/500')
+        assert r.status_code == 404
+        assert b'404 - Page Not Found' in r.data
+
+    def test_internal_error_uses_custom_500(self, client, app):
+        previous = app.config.get('PROPAGATE_EXCEPTIONS')
+        app.config['PROPAGATE_EXCEPTIONS'] = False
+        try:
+            r = client.get('/__test__/raise-500')
+            assert r.status_code == 500
+            assert b'500 - Something Went Wrong' in r.data
+        finally:
+            app.config['PROPAGATE_EXCEPTIONS'] = previous
 
 
 class TestWalletRoute:

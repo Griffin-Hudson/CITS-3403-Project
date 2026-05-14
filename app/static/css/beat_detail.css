@@ -379,13 +379,41 @@
 /* ── Tier pricing cards ──────────────────────────────────────
    Left-border coloured cards matching the Producer Studio upload.
    ─────────────────────────────────────────────────────────── */
+.beat-detail-pricing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
 .beat-detail-pricing-section h3 {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ts-text-muted);
-  margin-bottom: 12px;
+  margin: 0;
+}
+
+.bd-wallet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ts-text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ts-border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bd-wallet-link:hover {
+  color: var(--ts-orange-light);
+  border-color: var(--ts-orange-border);
+  background: var(--ts-orange-dim);
 }
 
 .bd-tier-grid {
@@ -412,7 +440,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.bd-tier-basic    { border-left: 3px solid var(--ts-orange); }
+.bd-tier-lease    { border-left: 3px solid var(--ts-orange); }
 .bd-tier-premium  { border-left: 3px solid #8b6cef; }
 .bd-tier-exclusive { border-left: 3px solid var(--ts-teal); }
 
@@ -444,6 +472,40 @@
 }
 .bd-tier-premium .bd-tier-price   { color: #a78bfa; }
 .bd-tier-exclusive .bd-tier-price { color: var(--ts-teal); }
+
+.bd-tier-action {
+  margin-top: auto;
+  min-height: 34px;
+  border-radius: 10px;
+  background: var(--ts-orange);
+  color: #fff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  transition: filter 0.18s, transform 0.18s, opacity 0.18s;
+}
+
+.bd-tier-action:hover {
+  color: #fff;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.bd-tier-action.is-disabled {
+  cursor: default;
+  color: var(--ts-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ts-border);
+}
+
+.bd-tier-action.is-disabled:hover {
+  filter: none;
+  transform: none;
+}
 
 /* ── Like + Follow action row ───────────────────────────────
    Pill ghost buttons — colour shifts on active state.

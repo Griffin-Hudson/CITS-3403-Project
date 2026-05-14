@@ -72,6 +72,13 @@ def _allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
 
 
+def _upload_dir(subdir):
+    root = current_app.config.get('UPLOAD_ROOT')
+    if root:
+        return os.path.join(root, subdir)
+    return os.path.join(current_app.root_path, 'static', 'uploads', subdir)
+
+
 def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
     """Save a beat audio or cover file to static/uploads/<subdir>/; return relative path or None."""
     if not file or not file.filename:
@@ -87,7 +94,7 @@ def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
     file.seek(0)
     if size == 0 or size > max_size:
         return None
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subdir)
+    upload_dir = _upload_dir(subdir)
     os.makedirs(upload_dir, exist_ok=True)
     filename = f'user_{user_id}_{token_hex(8)}.{ext}'
     file.save(os.path.join(upload_dir, filename))
@@ -106,7 +113,7 @@ def _save_user_upload(file, user_id):
         return None
 
     # Ensure uploads directory exists
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+    upload_dir = _upload_dir('profiles')
     os.makedirs(upload_dir, exist_ok=True)
 
     # Generate unique filename with user_id and timestamp
@@ -123,6 +130,40 @@ def _save_user_upload(file, user_id):
 
     file.save(filepath)
     return f'/static/uploads/profiles/{filename}'
+
+
+def _beat_tier_options(beat):
+    owned_tiers = set()
+    if current_user.is_authenticated:
+        owned_tiers = {
+            row[0] for row in
+            db.session.query(Purchase.licence_type)
+            .filter(Purchase.buyer_id == current_user.id,
+                    Purchase.beat_id == beat.id)
+            .all()
+        }
+    exclusive_sold = beat_has_exclusive_owner(beat)
+    is_own_beat = current_user.is_authenticated and beat.producer_id == current_user.id
+    options = []
+    for tier in VALID_TIERS:
+        price = tier_price(beat, tier)
+        if price is None:
+            continue
+        disabled_reason = ''
+        if is_own_beat:
+            disabled_reason = 'Your beat'
+        elif tier in owned_tiers:
+            disabled_reason = 'Owned'
+        elif tier == TIER_EXCLUSIVE and exclusive_sold:
+            disabled_reason = 'Sold'
+        options.append({
+            'tier': tier,
+            'label': TIER_LABELS[tier],
+            'price': price,
+            'disabled_reason': disabled_reason,
+            'checkout_url': '' if disabled_reason else url_for('main.checkout', beat_id=beat.id, tier=tier),
+        })
+    return options
 
 
 @main.route('/')
@@ -440,7 +481,8 @@ def beat_detail(beat_id):
     return render_template('main/beat_detail.html',
                            beat=beat,
                            is_liked=is_liked,
-                           is_following=is_following)
+                           is_following=is_following,
+                           tier_options=_beat_tier_options(beat))
 
 
 @main.route('/follow/<int:user_id>', methods=['POST'])
@@ -514,9 +556,6 @@ def wallet_topup():
     return render_template('main/wallet_topup.html',
                            amount=amount,
                            balance=current_user.balance or 0.0)
-
-
-VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
 
 @main.route('/checkout/<int:beat_id>', methods=['GET', 'POST'])

@@ -149,35 +149,38 @@
 
         {# Pricing #}
         <div class="beat-detail-pricing-section">
-          <h3>Licence &amp; Pricing</h3>
+          <div class="beat-detail-pricing-head">
+            <h3>Licence &amp; Pricing</h3>
+            {% if current_user.is_authenticated %}
+              <a class="bd-wallet-link" href="{{ url_for('main.wallet') }}">
+                <i class="bi bi-wallet2"></i>
+                ${{ '%.2f' % (current_user.balance or 0) }}
+              </a>
+            {% endif %}
+          </div>
           <div class="bd-tier-grid">
-            <div class="bd-tier bd-tier-basic">
-              <div class="bd-tier-head">
-                <span class="bd-tier-tag">Basic lease</span>
-                <span class="bd-tier-cap">MP3 · Non-exclusive</span>
-              </div>
-              <div class="bd-tier-price">
-                {% if beat.price == 0 %}Free{% else %}${{ "%.0f"|format(beat.price) }}{% endif %}
-              </div>
-            </div>
-            {% if beat.premium_price is not none and beat.premium_price > 0 %}
-              <div class="bd-tier bd-tier-premium">
+            {% for option in tier_options %}
+              <div class="bd-tier bd-tier-{{ option.tier }}">
                 <div class="bd-tier-head">
-                  <span class="bd-tier-tag">Premium</span>
-                  <span class="bd-tier-cap">WAV · Trackouts</span>
+                  <span class="bd-tier-tag">{{ option.label }}</span>
+                  <span class="bd-tier-cap">
+                    {% if option.tier == 'lease' %}MP3 | Non-exclusive{% endif %}
+                    {% if option.tier == 'premium' %}WAV | Trackouts{% endif %}
+                    {% if option.tier == 'exclusive' %}Full rights buyout{% endif %}
+                  </span>
                 </div>
-                <div class="bd-tier-price">${{ "%.0f"|format(beat.premium_price) }}</div>
-              </div>
-            {% endif %}
-            {% if beat.exclusive_price is not none and beat.exclusive_price > 0 %}
-              <div class="bd-tier bd-tier-exclusive">
-                <div class="bd-tier-head">
-                  <span class="bd-tier-tag">Exclusive</span>
-                  <span class="bd-tier-cap">Full rights buyout</span>
+                <div class="bd-tier-price">
+                  {% if option.price == 0 %}Free{% else %}${{ "%.0f"|format(option.price) }}{% endif %}
                 </div>
-                <div class="bd-tier-price">${{ "%.0f"|format(beat.exclusive_price) }}</div>
+                {% if option.disabled_reason %}
+                  <span class="bd-tier-action is-disabled">{{ option.disabled_reason }}</span>
+                {% else %}
+                  <a class="bd-tier-action" href="{{ option.checkout_url }}">
+                    Buy {{ option.label }} <i class="bi bi-arrow-right-short"></i>
+                  </a>
+                {% endif %}
               </div>
-            {% endif %}
+            {% endfor %}
           </div>
         </div>
 

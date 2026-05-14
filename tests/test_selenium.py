@@ -132,7 +132,7 @@ class _SeleniumBase(unittest.TestCase):
         db.session.flush()
         b = Beat(
             title='Selenium Test Beat',
-            audio_url='/static/audio/demo.mp3',
+            audio_url='/static/audio/boombox.mp3',
             producer_id=u.id,
             price=0.0,
         )
@@ -517,6 +517,8 @@ class TestAuthenticatedInteractions(_SeleniumBase):
             )
 
         # Sign Out button must be present
+        menu_btn = wait.until(EC.presence_of_element_located((By.ID, 'nav-profile-menu-button')))
+        self.driver.execute_script("arguments[0].click();", menu_btn)
         signout = wait.until(EC.presence_of_element_located((By.ID, 'nav-signout')))
         self.assertTrue(signout.is_displayed(), 'Sign Out button must be visible after login')
         self._logout()
