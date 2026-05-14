@@ -1,7 +1,5 @@
 """Tests that all key page routes return expected HTTP status codes."""
 import io
-
-from app.models import Beat, User, db
 from tests.conftest import login, logout
 
 
@@ -16,6 +14,9 @@ PUBLIC_ROUTES = [
 PROTECTED_ROUTES = [
     '/upload',
     '/profile/edit',
+    '/wallet',
+    '/studio/earnings',
+    '/my-feeds',
 ]
 
 
@@ -167,3 +168,229 @@ class TestSearchRoute:
     def test_search_with_genre_filter(self, client):
         r = client.get('/search?genre=hip-hop')
         assert r.status_code == 200
+
+
+class TestWalletRoute:
+    def test_wallet_page_loads_authenticated(self, client, seeded_db):
+        login(client)
+        r = client.get('/wallet')
+        assert r.status_code == 200
+        logout(client)
+
+    def test_wallet_topup_valid_amount(self, client, seeded_db, app):
+        """Posting a valid top-up amount must succeed and increase the user's balance."""
+        login(client)
+        r = client.post('/wallet', data={'amount': '20.00'}, follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import User
+            u = User.query.get(seeded_db['user_id'])
+            assert u.balance >= 20.0, 'Balance must have increased after top-up'
+        logout(client)
+
+    def test_wallet_topup_invalid_amount_rejected(self, client, seeded_db, app):
+        """A zero or negative top-up amount must be rejected; balance must not change."""
+        login(client)
+        with app.app_context():
+            from app.models import User
+            u = User.query.get(seeded_db['user_id'])
+            balance_before = u.balance
+        r = client.post('/wallet', data={'amount': '0'}, follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import User
+            u = User.query.get(seeded_db['user_id'])
+            assert u.balance == balance_before, 'Balance must not change after a rejected top-up'
+        logout(client)
+
+
+class TestUploadRoute:
+    def _base_form(self):
+        return {
+            'title':        'My New Beat',
+            'genre':        'Hip-Hop',
+            'bpm':          '90',
+            'key':          'Am',
+            'mood_tag':     'chill',
+            'licence_type': 'Non-exclusive',
+            'price':        '9.99',
+            'audio_file':   (io.BytesIO(b'fake mp3 data'), 'beat.mp3'),
+        }
+
+    def test_upload_creates_beat_and_promotes_role(self, client, seeded_db, app):
+        """Posting a valid beat form must create a Beat row and ensure role=producer."""
+        login(client)
+        r = client.post('/upload', data=self._base_form(),
+                        content_type='multipart/form-data', follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import Beat, User
+            beat = Beat.query.filter_by(title='My New Beat').first()
+            assert beat is not None, 'Beat must be created in the database'
+            assert beat.producer_id == seeded_db['user_id']
+            user = User.query.get(seeded_db['user_id'])
+            assert user.role == 'producer', 'Upload must promote user to producer role'
+        logout(client)
+
+    def test_upload_missing_audio_rejected(self, client, seeded_db):
+        """Submitting the upload form without an audio file must not create a beat."""
+        login(client)
+        form = {k: v for k, v in self._base_form().items() if k != 'audio_file'}
+        r = client.post('/upload', data=form,
+                        content_type='multipart/form-data', follow_redirects=True)
+        assert r.status_code == 200
+        logout(client)
+
+    def test_upload_bad_extension_rejected(self, client, seeded_db, app):
+        """Uploading a disallowed file extension must not create a beat."""
+        login(client)
+        form = {**self._base_form(), 'audio_file': (io.BytesIO(b'bad file'), 'virus.exe')}
+        r = client.post('/upload', data=form,
+                        content_type='multipart/form-data', follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import Beat
+            assert Beat.query.filter_by(title='My New Beat').first() is None, \
+                'Beat must not be created when audio extension is disallowed'
+        logout(client)
+
+    def test_upload_empty_title_rejected(self, client, seeded_db, app):
+        """Submitting an upload with no title must not create a beat."""
+        login(client)
+        form = {**self._base_form(), 'title': ''}
+        r = client.post('/upload', data=form,
+                        content_type='multipart/form-data', follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import Beat
+            assert Beat.query.filter_by(title='').first() is None
+        logout(client)
+
+
+class TestStudioEarningsRoute:
+    def test_studio_earnings_loads_for_producer(self, client, seeded_db):
+        """Studio earnings page must load for the seeded producer user."""
+        login(client)
+        r = client.get('/studio/earnings')
+        assert r.status_code == 200, f'/studio/earnings returned {r.status_code} for a producer'
+        logout(client)
+
+
+class TestWalletTopupRoute:
+    def test_wallet_topup_without_amount_redirects_to_wallet(self, client, seeded_db):
+        """GET /wallet/topup with no amount param must redirect to /wallet."""
+        login(client)
+        r = client.get('/wallet/topup', follow_redirects=False)
+        assert r.status_code == 302
+        assert '/wallet' in r.headers.get('Location', '')
+        logout(client)
+
+    def test_wallet_topup_get_with_valid_amount_loads(self, client, seeded_db):
+        """GET /wallet/topup?amount=10.00 must return 200."""
+        login(client)
+        r = client.get('/wallet/topup?amount=10.00')
+        assert r.status_code == 200
+        logout(client)
+
+    def test_wallet_topup_post_increases_balance(self, client, seeded_db, app):
+        """POST /wallet/topup?amount=15.00 must increase the user's balance."""
+        login(client)
+        r = client.post('/wallet/topup?amount=15.00', follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import User
+            u = User.query.get(seeded_db['user_id'])
+            assert u.balance >= 15.0, 'Balance must increase after card top-up'
+        logout(client)
+
+
+class TestCheckoutRoute:
+    def test_checkout_unauthenticated_redirects(self, client, seeded_db):
+        """Unauthenticated access to /checkout must redirect to login."""
+        logout(client)
+        r = client.get(f'/checkout/{seeded_db["beat_id"]}?tier=lease',
+                       follow_redirects=False)
+        assert r.status_code == 302
+        assert '/login' in r.headers.get('Location', '')
+
+    def test_checkout_invalid_tier_redirects(self, client, seeded_db):
+        """An unrecognised tier must redirect back to the beat detail page."""
+        login(client)
+        r = client.get(f'/checkout/{seeded_db["beat_id"]}?tier=invalid',
+                       follow_redirects=True)
+        assert r.status_code == 200
+        logout(client)
+
+    def test_checkout_own_beat_blocked(self, client, seeded_db):
+        """A producer cannot purchase their own beat."""
+        login(client)
+        r = client.get(f'/checkout/{seeded_db["beat_id"]}?tier=lease',
+                       follow_redirects=True)
+        assert r.status_code == 200
+        assert b'cannot' in r.data.lower() or b'own' in r.data.lower()
+        logout(client)
+
+    def test_checkout_balance_purchase_creates_record(self, client, seeded_db, app):
+        """A buyer purchasing via balance must create a Purchase row."""
+        client.post('/register', data={
+            'username': 'buyer99', 'email': 'buyer99@test.com',
+            'password': 'BuyPass1!', 'confirm_password': 'BuyPass1!',
+        }, follow_redirects=True)
+        client.post('/login', data={'email': 'buyer99@test.com', 'password': 'BuyPass1!'})
+
+        beat_id = seeded_db['beat_id']
+        r = client.post(f'/checkout/{beat_id}?tier=lease',
+                        data={'method': 'balance'}, follow_redirects=True)
+        assert r.status_code == 200
+
+        with app.app_context():
+            from app.models import Purchase, User
+            buyer = User.query.filter_by(email='buyer99@test.com').first()
+            purchase = Purchase.query.filter_by(buyer_id=buyer.id, beat_id=beat_id).first()
+            assert purchase is not None, 'A Purchase record must exist after checkout'
+            assert purchase.licence_type == 'lease'
+        logout(client)
+
+    def test_checkout_duplicate_tier_blocked(self, client, seeded_db, app):
+        """Attempting to buy the same tier twice must redirect to my-feeds."""
+        client.post('/register', data={
+            'username': 'buyer88', 'email': 'buyer88@test.com',
+            'password': 'BuyPass1!', 'confirm_password': 'BuyPass1!',
+        }, follow_redirects=True)
+        client.post('/login', data={'email': 'buyer88@test.com', 'password': 'BuyPass1!'})
+
+        beat_id = seeded_db['beat_id']
+        client.post(f'/checkout/{beat_id}?tier=lease',
+                    data={'method': 'balance'}, follow_redirects=True)
+
+        r = client.get(f'/checkout/{beat_id}?tier=lease', follow_redirects=True)
+        assert r.status_code == 200
+        assert b'already own' in r.data.lower()
+        logout(client)
+
+
+class TestMyFeedsRoute:
+    def test_my_feeds_empty_loads(self, client, seeded_db):
+        """An authenticated user with no purchases must see the my-feeds page."""
+        login(client)
+        r = client.get('/my-feeds')
+        assert r.status_code == 200
+        logout(client)
+
+    def test_my_feeds_shows_purchased_beat(self, client, seeded_db, app):
+        """A beat purchased by the user must appear on the my-feeds page."""
+        with app.app_context():
+            from app.models import db as _db, Purchase
+            _db.session.add(Purchase(
+                buyer_id=seeded_db['user_id'],
+                beat_id=seeded_db['beat_id'],
+                price_paid=0.0,
+                licence_type='lease',
+            ))
+            _db.session.commit()
+
+        login(client)
+        r = client.get('/my-feeds')
+        assert r.status_code == 200
+        assert b'Test Beat' in r.data, 'Purchased beat title must appear on /my-feeds'
+        logout(client)
