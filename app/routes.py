@@ -10,10 +10,23 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import limiter
-from app.forms import SignupForm, LoginForm, UploadBeatForm, EditProfileForm, TopUpForm
-from app.models import db, User, Beat, Like, Transaction, saved_beats, follows
+from app.forms import (SignupForm, LoginForm, UploadBeatForm, EditProfileForm,
+                       TopUpForm, MIN_TOPUP, MAX_TOPUP)
+from app.models import db, User, Beat, Like, Purchase, Transaction, saved_beats, follows
 from app.services.feed_service import get_feed_beats
-from app.services.wallet_service import top_up
+from app.services.wallet_service import (
+    top_up,
+    purchase_beat,
+    tier_price,
+    user_owns_tier,
+    beat_has_exclusive_owner,
+    TIER_LABELS,
+    TIER_LEASE,
+    TIER_PREMIUM,
+    TIER_EXCLUSIVE,
+    METHOD_BALANCE,
+    METHOD_CARD,
+)
 
 main = Blueprint('main', __name__)
 
@@ -253,9 +266,10 @@ def feed():
     # Service-layer ranking blends engagement, freshness, and user affinity.
     beats = get_feed_beats(current_user, limit=15)
 
-    is_liked_map     = {}
-    is_saved_map     = {}
-    is_following_map = {}
+    is_liked_map      = {}
+    is_saved_map      = {}
+    is_following_map  = {}
+    owned_tiers_map   = {}
     if current_user.is_authenticated:
         beat_ids = [b.id for b in beats]
         # Batch-load liked and saved states in two queries instead of 2*N
@@ -275,6 +289,15 @@ def feed():
         is_liked_map = {bid: bid in liked_ids for bid in beat_ids}
         is_saved_map = {bid: bid in saved_ids for bid in beat_ids}
 
+        # which tiers the current user already owns on each beat in view —
+        # the feed renders 'Owned' instead of a price button for these
+        owned_rows = (db.session.query(Purchase.beat_id, Purchase.licence_type)
+                      .filter(Purchase.buyer_id == current_user.id,
+                              Purchase.beat_id.in_(beat_ids))
+                      .all())
+        for bid, lic in owned_rows:
+            owned_tiers_map.setdefault(bid, set()).add(lic)
+
         # Batch-load follow state for unique producers on this page
         producer_ids = list({b.producer_id for b in beats if b.producer_id})
         following_ids = {
@@ -290,7 +313,8 @@ def feed():
                            beats=beats,
                            is_liked_map=is_liked_map,
                            is_saved_map=is_saved_map,
-                           is_following_map=is_following_map)
+                           is_following_map=is_following_map,
+                           owned_tiers_map=owned_tiers_map)
 
 
 @main.route('/upload', methods=['GET', 'POST'])
@@ -460,18 +484,12 @@ def follow(user_id):
 @login_required
 def wallet():
     form = TopUpForm()
+    # Two-step top-up: wallet form validates the amount, then bounces the user
+    # to /wallet/topup where they enter (demo) card details. Mirrors the
+    # checkout payment flow so the whole site speaks one visual language.
     if form.validate_on_submit():
         amount = round(float(form.amount.data), 2)
-        try:
-            top_up(current_user, amount, note='Wallet top-up')
-            db.session.commit()
-        except Exception:
-            logger.error('Wallet top-up failed for user %s', current_user.id, exc_info=True)
-            db.session.rollback()
-            flash('Top-up failed. Please try again.', 'danger')
-            return redirect(url_for('main.wallet'))
-        flash(f'Added ${amount:.2f} to your balance.', 'success')
-        return redirect(url_for('main.wallet'))
+        return redirect(url_for('main.wallet_topup', amount=f'{amount:.2f}'))
 
     if form.errors:
         for _field, errors in form.errors.items():
@@ -484,6 +502,119 @@ def wallet():
                                                   Transaction.TYPE_REFUND]))
                     .limit(50).all())
     return render_template('main/wallet.html', form=form, transactions=transactions)
+
+
+@main.route('/wallet/topup', methods=['GET', 'POST'])
+@login_required
+def wallet_topup():
+    raw = request.values.get('amount', '').strip()
+    try:
+        amount = round(float(raw), 2)
+    except (TypeError, ValueError):
+        flash('Pick an amount on the wallet page first.', 'warning')
+        return redirect(url_for('main.wallet'))
+
+    if amount < MIN_TOPUP or amount > MAX_TOPUP:
+        flash(f'Amount must be between ${MIN_TOPUP:.0f} and ${MAX_TOPUP:,.0f}.', 'danger')
+        return redirect(url_for('main.wallet'))
+
+    if request.method == 'POST':
+        try:
+            top_up(current_user, amount, note='Wallet top-up via card (demo)')
+            db.session.commit()
+        except Exception:
+            logger.error('Wallet top-up failed for user %s', current_user.id, exc_info=True)
+            db.session.rollback()
+            flash('Top-up failed. Please try again.', 'danger')
+            return redirect(url_for('main.wallet_topup', amount=f'{amount:.2f}'))
+        flash(f'Added ${amount:.2f} to your balance (demo — no real charge was made).', 'success')
+        return redirect(url_for('main.wallet'))
+
+    return render_template('main/wallet_topup.html',
+                           amount=amount,
+                           balance=current_user.balance or 0.0)
+
+
+VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
+
+
+@main.route('/checkout/<int:beat_id>', methods=['GET', 'POST'])
+@login_required
+def checkout(beat_id):
+    beat = Beat.query.get_or_404(beat_id)
+    tier = (request.values.get('tier') or '').lower()
+
+    if tier not in VALID_TIERS:
+        flash('Pick a licence tier to continue.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    price = tier_price(beat, tier)
+    if price is None:
+        flash('That licence is not available for this beat.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    if beat.producer_id == current_user.id:
+        flash('You cannot buy your own beat.', 'warning')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    if user_owns_tier(current_user, beat, tier):
+        flash(f'You already own the {TIER_LABELS[tier]} licence for this beat.', 'info')
+        return redirect(url_for('main.my_feeds'))
+
+    # Exclusive licence is a one-shot, platform-wide sale
+    if tier == TIER_EXCLUSIVE and beat_has_exclusive_owner(beat):
+        flash('Exclusive rights for this beat have already been sold.', 'danger')
+        return redirect(url_for('main.beat_detail', beat_id=beat.id))
+
+    error = None
+    selected_method = request.form.get('method', METHOD_BALANCE) if request.method == 'POST' else METHOD_BALANCE
+
+    if request.method == 'POST':
+        method = selected_method
+        if method not in (METHOD_BALANCE, METHOD_CARD):
+            error = 'Choose a payment method.'
+        elif method == METHOD_BALANCE and (current_user.balance or 0.0) < price:
+            error = (f'Insufficient balance. Top up ${price - (current_user.balance or 0.0):.2f} '
+                     'more to complete this purchase.')
+        else:
+            try:
+                purchase_beat(current_user, beat, tier, method)
+                db.session.commit()
+            except Exception:
+                logger.error('Checkout failed for user %s beat %s', current_user.id, beat.id, exc_info=True)
+                db.session.rollback()
+                flash('Something went wrong. Please try again.', 'danger')
+                return redirect(url_for('main.checkout', beat_id=beat.id, tier=tier))
+
+            if method == METHOD_CARD:
+                # Front-end shows a demo modal before redirect; flash backs it up
+                # in case the modal was dismissed early.
+                flash('Card payment processed (demo — no real charge was made).', 'info')
+            flash(f'{TIER_LABELS[tier]} licence purchased for "{beat.title}".', 'success')
+            return redirect(url_for('main.my_feeds'))
+
+    return render_template('main/checkout.html',
+                           beat=beat,
+                           tier=tier,
+                           tier_label=TIER_LABELS[tier],
+                           price=price,
+                           selected_method=selected_method,
+                           error=error,
+                           balance=current_user.balance or 0.0)
+
+
+@main.route('/my-feeds')
+@login_required
+def my_feeds():
+    page = request.args.get('page', 1, type=int)
+    purchases = (Purchase.query
+                 .filter_by(buyer_id=current_user.id)
+                 .join(Beat, Beat.id == Purchase.beat_id)
+                 .order_by(Purchase.purchased_at.desc())
+                 .paginate(page=page, per_page=12))
+    return render_template('main/my_feeds.html',
+                           purchases=purchases,
+                           tier_labels=TIER_LABELS)
 
 
 @main.route('/studio/earnings')

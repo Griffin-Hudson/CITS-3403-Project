@@ -674,7 +674,9 @@
   margin-bottom: 10px;
 }
 
-/* Each tier block — small pill with label + value */
+/* Each tier block — small pill with label + value. Renders as <a> so it
+   doubles as a checkout entry point; styling kept identical to the original
+   non-interactive pill, with hover/focus lift added below. */
 .feed-pricing-tier {
   display: flex;
   flex-direction: column;
@@ -684,6 +686,35 @@
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
   min-width: 58px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.feed-pricing-tier:hover {
+  transform: translateY(-1px);
+  border-color: rgba(217,119,6,0.6);
+  background: rgba(217,119,6,0.14);
+}
+.feed-pricing-tier:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(217,119,6,0.55);
+}
+/* owned and producer's own beat — non-clickable, dimmer look */
+.feed-pricing-tier.is-owned,
+.feed-pricing-tier.is-disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.feed-pricing-tier.is-owned:hover,
+.feed-pricing-tier.is-disabled:hover {
+  transform: none;
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+}
+.feed-pricing-tier.is-owned .feed-pricing-value {
+  color: var(--ts-teal);
+  font-size: 11px;
+  letter-spacing: 0.06em;
 }
 
 /* When only one price exists, make it wider */
@@ -710,6 +741,10 @@
   background: rgba(245,158,11,0.08);
 }
 .feed-pricing-excl .feed-pricing-value { color: #f59e0b; }
+.feed-pricing-tier.feed-pricing-excl:hover {
+  border-color: rgba(245,158,11,0.7);
+  background: rgba(245,158,11,0.18);
+}
 
 /* ── Details & Purchase ghost button ────────────────────────
    Semi-transparent pill link leading to the beat's full detail

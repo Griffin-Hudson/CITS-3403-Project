@@ -164,25 +164,42 @@
           {% if beat.key %}<span class="feed-tag">{{ beat.key }}</span>{% endif %}
           {% if beat.mood_tag %}{% for tag in beat.mood_tag.split(',') if tag.strip() and tag.strip()|lower != (beat.genre or '')|lower %}<span class="feed-tag feed-tag-mood">{{ tag.strip() }}</span>{% endfor %}{% endif %}
         </div>
-        {# 3-tier pricing panel — compact inline version on the feed card #}
+        {# 3-tier pricing panel — each tier is a checkout button #}
+        {% set owned = owned_tiers_map.get(beat.id) or [] %}
+        {% set is_own_beat = current_user.is_authenticated and beat.producer_id == current_user.id %}
         <div class="feed-pricing-panel">
-          <div class="feed-pricing-tier {% if not beat.premium_price and not beat.exclusive_price %}feed-pricing-tier-solo{% endif %}">
+          {% set lease_owned = 'lease' in owned %}
+          <a class="feed-pricing-tier {% if not beat.premium_price and not beat.exclusive_price %}feed-pricing-tier-solo{% endif %}{% if lease_owned %} is-owned{% endif %}{% if is_own_beat %} is-disabled{% endif %}"
+             href="{% if is_own_beat or lease_owned %}#{% else %}{{ url_for('main.checkout', beat_id=beat.id, tier='lease') }}{% endif %}"
+             {% if is_own_beat or lease_owned %}aria-disabled="true" tabindex="-1"{% endif %}>
             <span class="feed-pricing-label">Lease</span>
             <span class="feed-pricing-value">
-              {% if beat.price == 0 %}FREE{% else %}${{ "%.0f"|format(beat.price) }}{% endif %}
+              {% if lease_owned %}OWNED
+              {% elif beat.price == 0 %}FREE
+              {% else %}${{ "%.0f"|format(beat.price) }}{% endif %}
             </span>
-          </div>
+          </a>
           {% if beat.premium_price %}
-          <div class="feed-pricing-tier">
+          {% set premium_owned = 'premium' in owned %}
+          <a class="feed-pricing-tier{% if premium_owned %} is-owned{% endif %}{% if is_own_beat %} is-disabled{% endif %}"
+             href="{% if is_own_beat or premium_owned %}#{% else %}{{ url_for('main.checkout', beat_id=beat.id, tier='premium') }}{% endif %}"
+             {% if is_own_beat or premium_owned %}aria-disabled="true" tabindex="-1"{% endif %}>
             <span class="feed-pricing-label">Premium</span>
-            <span class="feed-pricing-value">${{ "%.0f"|format(beat.premium_price) }}</span>
-          </div>
+            <span class="feed-pricing-value">
+              {% if premium_owned %}OWNED{% else %}${{ "%.0f"|format(beat.premium_price) }}{% endif %}
+            </span>
+          </a>
           {% endif %}
           {% if beat.exclusive_price %}
-          <div class="feed-pricing-tier feed-pricing-excl">
+          {% set excl_owned = 'exclusive' in owned %}
+          <a class="feed-pricing-tier feed-pricing-excl{% if excl_owned %} is-owned{% endif %}{% if is_own_beat %} is-disabled{% endif %}"
+             href="{% if is_own_beat or excl_owned %}#{% else %}{{ url_for('main.checkout', beat_id=beat.id, tier='exclusive') }}{% endif %}"
+             {% if is_own_beat or excl_owned %}aria-disabled="true" tabindex="-1"{% endif %}>
             <span class="feed-pricing-label">Exclusive</span>
-            <span class="feed-pricing-value">${{ "%.0f"|format(beat.exclusive_price) }}</span>
-          </div>
+            <span class="feed-pricing-value">
+              {% if excl_owned %}OWNED{% else %}${{ "%.0f"|format(beat.exclusive_price) }}{% endif %}
+            </span>
+          </a>
           {% endif %}
         </div>
 

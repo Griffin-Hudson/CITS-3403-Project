@@ -1604,25 +1604,38 @@ function appendBeatCard(beat) {
     ? `<img src="${escHtml(beat.producer_avatar)}" alt="${escHtml(beat.producer_username || 'Producer')}" />`
     : escHtml((beat.producer_username || '?')[0].toUpperCase());
 
-  // Build the 3-tier pricing panel HTML
+  // Build the 3-tier pricing panel HTML — each tier is a checkout link.
+  // "Owned" replaces the price when the current user already holds that tier;
+  // own beats render disabled (can't buy your own).
+  const owned = new Set(beat.owned_tiers || []);
+  const isOwn = beat.is_own_beat === true;
+  const isSolo = !beat.premium_price && !beat.exclusive_price;
+
+  function tierAnchor(tier, label, value, extraClass) {
+    const isOwned = owned.has(tier);
+    const disabled = isOwn || isOwned;
+    const href = disabled ? '#' : `/checkout/${beat.id}?tier=${tier}`;
+    const cls = [
+      'feed-pricing-tier',
+      extraClass || '',
+      isOwned ? 'is-owned' : '',
+      isOwn ? 'is-disabled' : '',
+    ].filter(Boolean).join(' ');
+    const display = isOwned ? 'OWNED' : value;
+    const aria = disabled ? 'aria-disabled="true" tabindex="-1"' : '';
+    return `
+      <a class="${cls}" href="${href}" ${aria}>
+        <span class="feed-pricing-label">${label}</span>
+        <span class="feed-pricing-value">${display}</span>
+      </a>`;
+  }
+
   const leaseVal = beat.price === 0 ? 'FREE' : `$${Math.round(beat.price)}`;
-  const isSolo   = !beat.premium_price && !beat.exclusive_price;
   let pricingPanel = `
     <div class="feed-pricing-panel">
-      <div class="feed-pricing-tier${isSolo ? ' feed-pricing-tier-solo' : ''}">
-        <span class="feed-pricing-label">Lease</span>
-        <span class="feed-pricing-value">${leaseVal}</span>
-      </div>
-      ${beat.premium_price ? `
-      <div class="feed-pricing-tier">
-        <span class="feed-pricing-label">Premium</span>
-        <span class="feed-pricing-value">$${Math.round(beat.premium_price)}</span>
-      </div>` : ''}
-      ${beat.exclusive_price ? `
-      <div class="feed-pricing-tier feed-pricing-excl">
-        <span class="feed-pricing-label">Exclusive</span>
-        <span class="feed-pricing-value">$${Math.round(beat.exclusive_price)}</span>
-      </div>` : ''}
+      ${tierAnchor('lease', 'Lease', leaseVal, isSolo ? 'feed-pricing-tier-solo' : '')}
+      ${beat.premium_price ? tierAnchor('premium', 'Premium', `$${Math.round(beat.premium_price)}`, '') : ''}
+      ${beat.exclusive_price ? tierAnchor('exclusive', 'Exclusive', `$${Math.round(beat.exclusive_price)}`, 'feed-pricing-excl') : ''}
     </div>
     <a href="/beats/${beat.id}" class="feed-ghost-btn">
       <i class="bi bi-info-circle"></i> Details &amp; Purchase

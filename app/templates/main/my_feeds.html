@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}My Feeds — TuneFeed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/my_feeds.css') }}" />
+{% endblock %}
+
+{% block full_page %}
+<main class="myfeeds-page">
+  <div class="myfeeds-container">
+
+    <header class="myfeeds-header">
+      <h1 class="myfeeds-title">My Feeds</h1>
+      <p class="myfeeds-subtitle">Every beat you've licensed, newest first.</p>
+    </header>
+
+    {% if purchases.items %}
+      <ul class="myfeeds-list">
+        {% for p in purchases.items %}
+          {% set beat = p.beat %}
+          <li class="myfeeds-card">
+            <a class="myfeeds-cover" href="{{ url_for('main.beat_detail', beat_id=beat.id) }}">
+              {% if beat.cover_url %}
+                <img src="{{ beat.cover_url }}" alt="" />
+              {% else %}
+                <i class="bi bi-music-note-beamed"></i>
+              {% endif %}
+            </a>
+            <div class="myfeeds-meta">
+              <a class="myfeeds-beat-title" href="{{ url_for('main.beat_detail', beat_id=beat.id) }}">
+                {{ beat.title }}
+              </a>
+              <a class="myfeeds-producer" href="{{ url_for('main.profile', user_id=beat.producer_id) }}">
+                @{{ beat.producer.username }}
+              </a>
+              <div class="myfeeds-tags">
+                {% if beat.genre %}<span class="myfeeds-tag">{{ beat.genre }}</span>{% endif %}
+                {% if beat.bpm %}<span class="myfeeds-tag">{{ beat.bpm }} BPM</span>{% endif %}
+                {% if beat.key %}<span class="myfeeds-tag">{{ beat.key }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="myfeeds-side">
+              <span class="myfeeds-tier myfeeds-tier-{{ p.licence_type }}">
+                {{ tier_labels.get(p.licence_type, p.licence_type) }}
+              </span>
+              <span class="myfeeds-price">${{ '%.2f' % p.price_paid }}</span>
+              <time class="myfeeds-date" datetime="{{ p.purchased_at.strftime('%Y-%m-%dT%H:%M') }}">
+                {{ p.purchased_at.strftime('%b %d, %Y') }}
+              </time>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% if purchases.pages > 1 %}
+        <nav class="myfeeds-pagination" aria-label="Page navigation">
+          {% if purchases.has_prev %}
+            <a class="myfeeds-page-link" href="{{ url_for('main.my_feeds', page=purchases.prev_num) }}">
+              <i class="bi bi-chevron-left"></i> Previous
+            </a>
+          {% endif %}
+          <span class="myfeeds-page-info">Page {{ purchases.page }} of {{ purchases.pages }}</span>
+          {% if purchases.has_next %}
+            <a class="myfeeds-page-link" href="{{ url_for('main.my_feeds', page=purchases.next_num) }}">
+              Next <i class="bi bi-chevron-right"></i>
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <div class="myfeeds-empty">
+        <i class="bi bi-bag-heart"></i>
+        <h2>No beats yet</h2>
+        <p>Anything you buy from the feed will show up here.</p>
+        <a class="myfeeds-empty-cta" href="{{ url_for('main.feed') }}">
+          <i class="bi bi-music-note-list"></i> Browse the feed
+        </a>
+      </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}
