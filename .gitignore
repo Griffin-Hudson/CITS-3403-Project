@@ -217,3 +217,7 @@ __marimo__/
 .anthropic/
 *.claude-session
 CLAUDE.md
+
+# user-uploaded beat files (audio + cover art)
+app/static/uploads/beats/
+app/static/uploads/covers/

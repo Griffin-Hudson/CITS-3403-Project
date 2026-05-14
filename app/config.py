@@ -24,6 +24,10 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
 
+    # cap total request size so a huge beat upload can't exhaust memory.
+    # leaves headroom for the 50 MB audio + 5 MB cover + form overhead.
+    MAX_CONTENT_LENGTH = 60 * 1024 * 1024
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     # Only send the cookie over HTTPS; disabled in local dev (FLASK_DEBUG=true) where there is no TLS

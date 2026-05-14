@@ -26,6 +26,14 @@ ALLOWED_UPLOAD_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_UPLOAD_SIZE_MB = 5
 MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 5 MB
 
+# beat upload limits
+ALLOWED_BEAT_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
+ALLOWED_BEAT_COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
+MAX_BEAT_AUDIO_SIZE_MB = 50
+MAX_BEAT_AUDIO_SIZE = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
+MAX_BEAT_COVER_SIZE_MB = 5
+MAX_BEAT_COVER_SIZE = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
+
 
 def _safe_redirect_target(target, request_host=''):
     """Allow only same-site redirect targets or root-relative paths."""
@@ -62,33 +70,58 @@ def _allowed_file(filename):
 
 def _save_user_upload(file, user_id):
     """Save uploaded profile picture and return the relative path.
-    
+
     Returns: relative path to saved file, or None if save failed
     """
     if not file or file.filename == '':
         return None
-    
+
     if not _allowed_file(file.filename):
         return None
-    
+
     # Ensure uploads directory exists
     upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
     os.makedirs(upload_dir, exist_ok=True)
-    
+
     # Generate unique filename with user_id and timestamp
     ext = secure_filename(file.filename).rsplit('.', 1)[1].lower()
     filename = f'user_{user_id}_{token_hex(8)}.{ext}'
     filepath = os.path.join(upload_dir, filename)
-    
+
     # Read size from the stream, then reset so save() starts from byte 0.
     file.seek(0, 2)
     size = file.tell()
     file.seek(0)
     if size == 0 or size > MAX_UPLOAD_SIZE:
         return None
-    
+
     file.save(filepath)
     return f'/static/uploads/profiles/{filename}'
+
+
+def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
+    """Save a beat audio or cover file under static/uploads/<subdir>/."""
+    if not file or not file.filename:
+        return None
+    name = secure_filename(file.filename)
+    if '.' not in name:
+        return None
+    ext = name.rsplit('.', 1)[1].lower()
+    if ext not in allowed_exts:
+        return None
+
+    # size check using stream tell/seek
+    file.seek(0, 2)
+    size = file.tell()
+    file.seek(0)
+    if size == 0 or size > max_size:
+        return None
+
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
+    file.save(os.path.join(upload_dir, filename))
+    return f'/static/uploads/{subdir}/{filename}'
 
 
 @main.route('/')
@@ -265,6 +298,26 @@ def feed():
 def upload():
     form = UploadBeatForm()
     if form.validate_on_submit():
+        # step 1: save audio file (required)
+        audio_path = _save_beat_upload(
+            form.audio_file.data, 'beats', current_user.id,
+            ALLOWED_BEAT_AUDIO_EXTENSIONS, MAX_BEAT_AUDIO_SIZE,
+        )
+        if not audio_path:
+            flash(f'Audio file is missing or larger than {MAX_BEAT_AUDIO_SIZE_MB}MB.', 'danger')
+            return render_template('main/upload.html', form=form)
+
+        # step 2: save cover if one was provided
+        cover_path = None
+        if form.cover_file.data and form.cover_file.data.filename:
+            cover_path = _save_beat_upload(
+                form.cover_file.data, 'covers', current_user.id,
+                ALLOWED_BEAT_COVER_EXTENSIONS, MAX_BEAT_COVER_SIZE,
+            )
+            if not cover_path:
+                flash(f'Cover image must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB}MB.', 'danger')
+                return render_template('main/upload.html', form=form)
+
         beat = Beat(
             title=form.title.data,
             genre=form.genre.data,
@@ -275,8 +328,8 @@ def upload():
             price=form.price.data,
             premium_price=form.premium_price.data or None,
             exclusive_price=form.exclusive_price.data or None,
-            audio_url=form.audio_url.data,
-            cover_url=form.cover_url.data,
+            audio_url=audio_path,
+            cover_url=cover_path,
             producer_id=current_user.id,
         )
         db.session.add(beat)

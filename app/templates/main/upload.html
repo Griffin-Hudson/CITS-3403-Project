@@ -136,23 +136,23 @@
       </section>
 
       {# ──────────────────────────────────────────────────────────
-         Section 2 — Audio + cover URLs with live preview
+         Section 2 — Audio + cover file uploads with live preview
          ────────────────────────────────────────────────────────── #}
       <section class="upload-card">
         <div class="upload-card-head">
           <span class="upload-step">02</span>
           <div>
             <h2 class="upload-section-title">Audio &amp; cover</h2>
-            <p class="upload-section-sub">Paste hosted URLs to your audio file and cover artwork.</p>
+            <p class="upload-section-sub">Choose your audio file and cover artwork from your computer.</p>
           </div>
         </div>
 
         <div class="upload-media-grid">
           <div class="upload-media-fields">
             <div class="upload-field">
-              <label class="upload-label" for="audio_url">Audio URL <span class="upload-required">*</span></label>
-              {{ form.audio_url(id="audio_url", class="ts-input upload-input", placeholder="https://cdn.example.com/track.mp3", maxlength=256, required=True, autocomplete="off") }}
-              <span class="upload-hint">Direct link to MP3, WAV, or stream.</span>
+              <label class="upload-label" for="audio_file">Audio file <span class="upload-required">*</span></label>
+              {{ form.audio_file(id="audio_file", class="upload-input", accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,.mp3,.wav,.m4a,.ogg", required=True) }}
+              <span class="upload-hint">MP3, WAV, M4A, or OGG. Up to 50 MB.</span>
 
               <div class="upload-audio-preview" id="audio-preview" hidden>
                 <div class="upload-audio-preview-head">
@@ -164,9 +164,9 @@
             </div>
 
             <div class="upload-field">
-              <label class="upload-label" for="cover_url">Cover image URL</label>
-              {{ form.cover_url(id="cover_url", class="ts-input upload-input", placeholder="https://cdn.example.com/cover.jpg", maxlength=256, autocomplete="off") }}
-              <span class="upload-hint">Square images work best. Optional.</span>
+              <label class="upload-label" for="cover_file">Cover image</label>
+              {{ form.cover_file(id="cover_file", class="upload-input", accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp") }}
+              <span class="upload-hint">Square PNG/JPG/WebP works best. Up to 5 MB. Optional.</span>
             </div>
           </div>
 

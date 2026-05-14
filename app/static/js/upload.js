@@ -9,23 +9,31 @@
   'use strict';
 
   /* ── Cover preview ───────────────────────────────────────
-     Switches the dashed placeholder to the loaded image when
-     the URL resolves; falls back to the placeholder on error.
+     Reads the chosen file with URL.createObjectURL so the
+     image shows up without an upload round-trip.
      ──────────────────────────────────────────────────────── */
-  const coverInput = document.getElementById('cover_url');
+  const coverInput = document.getElementById('cover_file');
   const coverFrame = document.getElementById('cover-frame');
   const coverImg   = document.getElementById('cover-preview-img');
   const coverEmpty = document.getElementById('cover-empty');
 
-  function showCover(url) {
+  // remember last blob url so we can revoke it
+  let lastCoverBlob = null;
+
+  function showCoverFromFile(file) {
     if (!coverImg || !coverFrame || !coverEmpty) return;
-    if (!url) {
+    if (lastCoverBlob) {
+      URL.revokeObjectURL(lastCoverBlob);
+      lastCoverBlob = null;
+    }
+    if (!file) {
       coverImg.hidden = true;
       coverImg.removeAttribute('src');
       coverEmpty.hidden = false;
       coverFrame.classList.remove('has-cover');
       return;
     }
+    lastCoverBlob = URL.createObjectURL(file);
     coverImg.onload = function () {
       coverImg.hidden = false;
       coverEmpty.hidden = true;
@@ -36,46 +44,39 @@
       coverEmpty.hidden = false;
       coverFrame.classList.remove('has-cover');
     };
-    coverImg.src = url;
+    coverImg.src = lastCoverBlob;
   }
 
   if (coverInput) {
-    coverInput.addEventListener('input', function () {
-      showCover(coverInput.value.trim());
+    coverInput.addEventListener('change', function () {
+      showCoverFromFile(coverInput.files && coverInput.files[0]);
     });
-    /* Repopulate after a failed POST round-trip */
-    if (coverInput.value) showCover(coverInput.value.trim());
   }
 
   /* ── Audio preview ───────────────────────────────────────
-     Only swaps the player src when the URL changes settle —
-     debounced so we don't refetch on every keystroke.
+     Plays the local file directly via a blob url so the
+     producer can sanity-check the track before submitting.
      ──────────────────────────────────────────────────────── */
-  const audioInput = document.getElementById('audio_url');
-  const audioBox   = document.getElementById('audio-preview');
+  const audioInput  = document.getElementById('audio_file');
+  const audioBox    = document.getElementById('audio-preview');
   const audioPlayer = document.getElementById('audio-preview-player');
 
-  let audioDebounce;
+  let lastAudioBlob = null;
 
-  function looksLikeAudioUrl(url) {
-    if (!url) return false;
-    try {
-      const u = new URL(url, window.location.origin);
-      return /^https?:$/.test(u.protocol);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function setAudioPreview(url) {
+  function setAudioPreviewFromFile(file) {
     if (!audioBox || !audioPlayer) return;
-    if (!looksLikeAudioUrl(url)) {
+    if (lastAudioBlob) {
+      URL.revokeObjectURL(lastAudioBlob);
+      lastAudioBlob = null;
+    }
+    if (!file) {
       audioBox.hidden = true;
       audioPlayer.removeAttribute('src');
       audioPlayer.load();
       return;
     }
-    audioPlayer.src = url;
+    lastAudioBlob = URL.createObjectURL(file);
+    audioPlayer.src = lastAudioBlob;
     audioBox.hidden = false;
     audioPlayer.onerror = function () {
       audioBox.hidden = true;
@@ -83,13 +84,9 @@
   }
 
   if (audioInput) {
-    audioInput.addEventListener('input', function () {
-      clearTimeout(audioDebounce);
-      audioDebounce = setTimeout(function () {
-        setAudioPreview(audioInput.value.trim());
-      }, 350);
+    audioInput.addEventListener('change', function () {
+      setAudioPreviewFromFile(audioInput.files && audioInput.files[0]);
     });
-    if (audioInput.value) setAudioPreview(audioInput.value.trim());
   }
 
   /* ── Multi-tag system ────────────────────────────────────
