@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from flask import Blueprint, jsonify, request, session
 from flask_login import current_user
+from sqlalchemy.exc import IntegrityError
 
 from app import limiter
 from app.models import (db, Beat, User, Comment, BeatPlayEvent, CommentReport,
@@ -120,7 +121,11 @@ def toggle_save(beat_id):
     else:
         current_user.save_beat(beat)
         saved = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        saved = True  # concurrent request already committed the save
     return jsonify({'saved': saved})
 
 
@@ -137,7 +142,11 @@ def toggle_like(beat_id):
     else:
         current_user.like_beat(beat)
         liked = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        liked = True  # concurrent request already committed the like
     return jsonify({'liked': liked, 'likes_count': beat.likes_count})
 
 
@@ -193,7 +202,11 @@ def toggle_follow(producer_id):
     else:
         current_user.follow(producer)
         following = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        following = True  # concurrent request already committed the follow
     return jsonify({'following': following, 'followers_count': producer.followers.count()})
 
 
@@ -322,7 +335,11 @@ def toggle_comment_like(comment_id):
     else:
         current_user.like_comment(comment)
         liked = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        liked = True  # concurrent request already committed the like
     return jsonify({'liked': liked, 'likes_count': comment.likes_count,
                     'dislikes_count': comment.dislikes_count})
 
@@ -339,7 +356,11 @@ def toggle_comment_dislike(comment_id):
     else:
         current_user.dislike_comment(comment)
         disliked = True
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        disliked = True  # concurrent request already committed the dislike
     return jsonify({'disliked': disliked, 'dislikes_count': comment.dislikes_count,
                     'likes_count': comment.likes_count})
 
@@ -381,16 +402,16 @@ def unreport_comment(comment_id):
     comment.report_count = max(0, comment.report_count - 1)
     db.session.delete(report)
     db.session.commit()
-    return jsonify({'reported': False})
+    return jsonify({'reported': False, 'report_count': comment.report_count})
 
 
 @api.route('/search')
 @limiter.limit('60 per minute')
 def search():
     """AJAX search endpoint — returns beats and producers as JSON."""
-    query        = request.args.get('q', '').strip()
+    query        = request.args.get('q', '').strip()[:128]
     search_type  = request.args.get('type', 'all')
-    genre_filter = request.args.get('genre', '').strip()
+    genre_filter = request.args.get('genre', '').strip()[:64]
 
     beats_out = []
     producers_out = []
@@ -439,6 +460,27 @@ def search():
         'query':        query,
         'search_type':  search_type,
         'genre_filter': genre_filter,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Spotify connection status
+# ---------------------------------------------------------------------------
+
+@api.route('/spotify/status')
+def spotify_status():
+    """Return the current user's Spotify connection state as JSON.
+
+    Used by the edit-profile page to reflect connection status without a
+    full page reload. Returns 401 for unauthenticated requests.
+    """
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Authentication required'}), 401
+    return jsonify({
+        'connected':          current_user.spotify_connected,
+        'display_name':       current_user.spotify_display_name or '',
+        'spotify_url':        current_user.spotify_url or '',
+        'spotify_artist_url': current_user.spotify_artist_url or '',
     })
 
 
