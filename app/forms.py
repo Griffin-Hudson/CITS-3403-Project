@@ -3,8 +3,12 @@
 import re
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import BooleanField, FloatField, IntegerField, StringField, PasswordField, SubmitField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
+
+AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
+COVER_EXTENSIONS  = {'png', 'jpg', 'jpeg', 'webp'}
 
 
 def _safe_url(form, field):
@@ -76,9 +80,15 @@ class UploadBeatForm(FlaskForm):
     price           = FloatField('Basic Lease Price',     validators=[DataRequired(), NumberRange(min=0)])
     premium_price   = FloatField('Premium License Price', validators=[Optional(), NumberRange(min=0)])
     exclusive_price = FloatField('Exclusive Rights Price', validators=[Optional(), NumberRange(min=0)])
-    audio_url = StringField('Audio File URL', validators=[DataRequired(), Length(max=256), _safe_url])
-    cover_url = StringField('Cover Image URL', validators=[Optional(), Length(max=256), _safe_url])
-    submit    = SubmitField('Upload Beat')
+    audio_file = FileField('Audio File', validators=[
+        DataRequired(message='An audio file is required.'),
+        FileAllowed(AUDIO_EXTENSIONS, 'MP3, WAV, M4A, or OGG only.'),
+    ])
+    cover_file = FileField('Cover Image', validators=[
+        Optional(),
+        FileAllowed(COVER_EXTENSIONS, 'PNG, JPG, or WebP only.'),
+    ])
+    submit = SubmitField('Upload Beat')
 
 
 class EditProfileForm(FlaskForm):
