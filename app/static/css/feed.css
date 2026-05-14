@@ -1262,3 +1262,14 @@
   }
   .feed-transport-labels { font-size: 9px; }
 }
+
+@media (max-width: 600px), (max-height: 520px) {
+  .feed-pricing-panel { display: none; }
+  .feed-ghost-btn     { display: none; }
+  .feed-info {
+    bottom: 14px;
+  }
+  .feed-tags {
+    margin-bottom: 0;
+  }
+}
