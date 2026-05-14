@@ -15,8 +15,7 @@ from datetime import datetime, timedelta
 import random
 
 from app import create_app
-from app.models import db, User, Beat, Like, Comment, Transaction
-from app.services.wallet_service import top_up, record_earning
+from app.models import db, User, Beat, Like, Comment
 
 random.seed(42)
 
@@ -153,43 +152,45 @@ AUDIO_PATHS = {
 }
 
 BEATS = [
+    # (title, prod, genre, bpm, key, mood, dur, licence, lease, premium, excl, plays, trending, days_ago)
+
     # ── ProducedByU — Trap ───────────────────────────────────────────────────
-    ("DRIVER",    0, "Trap", 130, "C# Min", "dark,melodic,cinematic",            "3:00", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
-    ("THE CITY",  0, "Trap", 126, "C# Min", "atmospheric,smooth,moody",          "3:10", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
-    ("POISON",    0, "Trap", 136, "C# Min", "eerie,emotional,melodic",           "2:50", "Non-exclusive",  24.99,  64.99, 249.99,    9, False,  2),
-    ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,energetic",         "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
+    ("DRIVER",    0, "Trap", 130, "C# Min", "dark,melodic,cinematic",             "3:00", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
+    ("THE CITY",  0, "Trap", 126, "C# Min", "atmospheric,smooth,moody",           "3:10", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
+    ("POISON",    0, "Trap", 136, "C# Min", "eerie,emotional,melodic",            "2:50", "Non-exclusive",  24.99,  64.99, 249.99,    9, False,  2),
+    ("ENEMY",     0, "Trap", 126, "G Min",  "rage,aggressive,energetic",          "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
 
     # ── ProducedByKyle — (beats coming) ──────────────────────────────────────
 
     # ── Swayy — Dancehall ────────────────────────────────────────────────────
-    ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "tropical,smooth,melodic",          "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
-    ("Reflection",     2, "Dancehall", 100, "G# Min", "tropical,emotional,melodic",       "3:15", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
-    ("Psyched",        2, "Dancehall", 140, "A Min",  "psychedelic,atmospheric,melodic",  "3:00", "Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
-    ("ROLLERCOASTER",  2, "Dancehall", 137, "B Min",  "energetic,bouncy,uplifting",       "2:55", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+    ("Don't Be Shy",   2, "Dancehall",  98, "Bb Min", "dancehall,smooth,melodic",      "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Reflection",     2, "Dancehall", 100, "G# Min", "tropical,emotional,melodic",    "3:15", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
+    ("Psyched",        2, "Dancehall", 140, "A Min",  "psychedelic,atmospheric,melodic","3:00","Non-exclusive",  22.99,  54.99, 219.99,    8, False,  3),
+    ("ROLLERCOASTER",  2, "Dancehall", 137, "B Min",  "energetic,bouncy,uplifting",    "2:55", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
 
     # ── VocaVoice — Vocal Sample ─────────────────────────────────────────────
-    ("IN THE RAIN",        3, "Trap",    154, "G Min",  "emotional,cinematic,atmospheric",    "3:05", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
-    ("Angels Singing",     3, "R&B",     106, "F# Min", "soulful,uplifting,melodic",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
-    ("Feelings",           3, "Soul",     96, "F Min",  "sad,emotional,minimal",              "2:45", "Non-exclusive",  16.99,  39.99, 159.99,    7, False,  6),
-    ("ABUNDANT IN MERCY", 3, "Gospel",  140, "F# Min", "soulful,uplifting,cinematic",        "3:15", "Non-exclusive",  22.99,  54.99, 219.99,    9, False,  2),
+    ("IN THE RAIN",       3, "Trap",    154, "G Min",  "emotional,vocal sample,cinematic",   "3:05", "Non-exclusive",  24.99,  59.99, 229.99,   10, True,   1),
+    ("Angels Singing",    3, "R&B",     106, "F# Min", "soulful,uplifting,melodic",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Feelings",          3, "Soul",     96, "F Min",  "sad,emotional,minimal",              "2:45", "Non-exclusive",  16.99,  39.99, 159.99,    7, False,  6),
+    ("ABUNDANT IN MERCY", 3, "Gospel",  140, "F# Min", "soulful,uplifting,cinematic",         "3:15", "Non-exclusive",  22.99,  54.99, 219.99,    9, False,  2),
 
     # ── TenTens — Afrobeat ───────────────────────────────────────────────────
-    ("Don't Worry",     4, "Afrobeat",  104, "Gb Maj", "chill,uplifting,atmospheric",         "3:20", "Non-exclusive",  18.99,  44.99, 179.99,   10, False,  2),
-    ("Me & You",        4, "Afrobeat",   98, "F Min",  "chill,emotional,nocturnal",           "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
-    ("Rosas",           4, "Afrobeat",   96, "G Min",  "chill,tropical,warm",                 "3:25", "Non-exclusive",  19.99,  44.99, 179.99,    8, False,  4),
-    ("All My Trust",    4, "Afrobeat",  128, "C Min",  "energetic,rhythmic,vibrant",          "3:10", "Non-exclusive",  22.99,  54.99, 219.99,   11, True,   1),
+    ("Don't Worry",     4, "Afrobeat",  104, "Gb Maj", "chill,uplifting,atmospheric",  "3:20", "Non-exclusive",  18.99,  44.99, 179.99,   10, False,  2),
+    ("Me & You",        4, "Afrobeat",   98, "F Min",  "chill,emotional,nocturnal",    "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    7, False,  5),
+    ("Rosas",           4, "Afrobeat",   96, "G Min",  "chill,tropical,warm",          "3:25", "Non-exclusive",  19.99,  44.99, 179.99,    8, False,  4),
+    ("All My Trust",    4, "Afrobeat",  128, "C Min",  "energetic,rhythmic,vibrant",   "3:10", "Non-exclusive",  22.99,  54.99, 219.99,   11, True,   1),
 
     # ── Jazzzed — Jazz / Boom Bap ────────────────────────────────────────────
-    ("Chemistry",   5, "Jazz",     123, "Eb Min", "chill,smooth,laid-back",        "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  2),
-    ("CALL ME",     5, "Jazz",      98, "F# Min", "nostalgic,soulful,retro",       "2:55", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
-    ("BALANCE",     5, "Boom Bap",  87, "G Min",  "laid-back,smooth,chill",        "3:00", "Non-exclusive",  17.99,  44.99, 179.99,    8, True,   1),
-    ("Shy2",        5, "Jazz",     132, "C# Min", "melodic,atmospheric,smooth",    "2:50", "Non-exclusive",  22.99,  54.99, 219.99,    6, False,  5),
+    ("Chemistry",   5, "Jazz",     123, "Eb Min", "chill,jazzy,smooth",         "3:10", "Non-exclusive",  19.99,  49.99, 199.99,    9, False,  2),
+    ("CALL ME",     5, "Jazz",      98, "F# Min", "nostalgic,soulful,retro",    "2:55", "Non-exclusive",  18.99,  44.99, 179.99,    7, False,  4),
+    ("BALANCE",     5, "Boom Bap",  87, "G Min",  "boom bap,jazzy,laid-back",   "3:00", "Non-exclusive",  17.99,  44.99, 179.99,    8, True,   1),
+    ("Shy2",        5, "Jazz",     132, "C# Min", "melodic,atmospheric,smooth", "2:50", "Non-exclusive",  22.99,  54.99, 219.99,    6, False,  5),
 
     # ── FakeTech — Electronic ────────────────────────────────────────────────
-    ("Boombox",   6, "Electronic", 195, "F# Min", "aggressive,bass-heavy,club",        "2:50", "Non-exclusive",  24.99,  59.99, 229.99,    8, False,  2),
-    ("Spin",      6, "Electronic", 104, "F Min",  "dark,rhythmic,bounce",             "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  5),
-    ("Jasmine",   6, "Electronic", 105, "F# Min", "melodic,atmospheric,hypnotic",     "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
-    ("Camomile",  6, "Electronic", 118, "G# Min", "dreamy,nostalgic,atmospheric",     "3:20", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
+    ("Boombox",   6, "Electronic", 195, "F# Min", "aggressive,bass-heavy,club",    "2:50", "Non-exclusive",  24.99,  59.99, 229.99,    8, False,  2),
+    ("Spin",      6, "Electronic", 104, "F Min",  "dark,rhythmic,bounce",          "3:05", "Non-exclusive",  19.99,  49.99, 199.99,    6, False,  5),
+    ("Jasmine",   6, "Electronic", 105, "F# Min", "melodic,atmospheric,hypnotic",  "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Camomile",  6, "Electronic", 118, "G# Min", "dreamy,nostalgic,atmospheric",  "3:20", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
 
     # ── YoungTiller — R&B ────────────────────────────────────────────────────
     ("In My Head",   7, "R&B",  98, "F Min",  "late night,smooth,atmospheric",          "3:20", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
@@ -198,44 +199,43 @@ BEATS = [
     ("I Know",       7, "R&B",  80, "Gb Min", "intimate,moody,ambient",                 "3:30", "Premium Lease",  19.99,  49.99, 199.99,    5, False,  8),
 
     # ── DaysNoTrace — Alternative Rock ───────────────────────────────────────
-    ("No More Pain",              8, "Alternative Rock", 195, "F# Min", "emotional,aggressive,intense",                   "3:00", "Non-exclusive",  24.99,  64.99, 249.99,    6, False,  3),
-    ("Unbroken",                  8, "Alternative Rock", 130, "C Min",  "sad,emotional,dark",                              "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
-    ("Too Late",                  8, "Alternative Rock", 148, "C Min",  "melancholic,heavy,emotional",                     "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
-    ("Leave Me",                  8, "Alternative Rock", 140, "A Min",  "sad,emotional,dark",                              "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
+    ("No More Pain",      8, "Alternative Rock", 195, "F# Min", "emotional,aggressive,intense",   "3:00", "Non-exclusive",  24.99,  64.99, 249.99,    6, False,  3),
+    ("Unbroken",          8, "Alternative Rock", 130, "C Min",  "sad,emotional,dark",             "3:15", "Non-exclusive",  19.99,  49.99, 199.99,    9, True,   1),
+    ("Too Late",          8, "Alternative Rock", 148, "C Min",  "melancholic,heavy,emotional",    "2:55", "Non-exclusive",  22.99,  54.99, 219.99,    7, False,  4),
+    ("Leave Me",          8, "Alternative Rock", 140, "A Min",  "sad,emotional,dark",             "3:10", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
 
     # ── VelvetPeril — Indie Rock ─────────────────────────────────────────────
-    ("Last Summer",          9, "Indie Rock", 114, "B Min",  "melancholic,guitar,emotional",               "3:30", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
-    ("Summer Girl",          9, "Indie Rock", 163, "Ab Min", "upbeat,emotional,summer vibe",               "2:58", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
-    ("Overdue",              9, "Indie Rock", 176, "Eb Maj", "driven,emotional,atmospheric",               "3:05", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
-    ("Endings",              9, "Indie Rock", 171, "D Min",  "cinematic,emotional,ambient",                "3:20", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
+    ("Last Summer",  9, "Indie Rock", 114, "B Min",  "melancholic,guitar,emotional",   "3:30", "Non-exclusive",  19.99,  49.99, 199.99,    8, False,  3),
+    ("Summer Girl",  9, "Indie Rock", 163, "Ab Min", "upbeat,emotional,summer vibe",  "2:58", "Non-exclusive",  19.99,  49.99, 199.99,   10, True,   2),
+    ("Overdue",      9, "Indie Rock", 176, "Eb Maj", "driven,emotional,atmospheric",  "3:05", "Non-exclusive",  22.99,  59.99, 229.99,    7, False,  4),
+    ("Endings",      9, "Indie Rock", 171, "D Min",  "cinematic,emotional,ambient",   "3:20", "Non-exclusive",  17.99,  44.99, 179.99,    5, False,  6),
 ]
 
 # ---------------------------------------------------------------------------
-# Sample comments and replies — tests the full comment system
+# Sample comments and replies
 # ---------------------------------------------------------------------------
 
 COMMENTS = [
-    # (beat_title, author_username, body, replies: [(username, body)])
     ("DRIVER", "DemoUser", "The C# Minor on this is haunting. Absolute cinema production 🎬",
      [("ProducedByU", "Appreciate it, that's exactly the energy 🙏"),
-      ("FakeTech",      "Bro the mix on this is crazy clean")]),
+      ("FakeTech",    "Bro the mix on this is crazy clean")]),
     ("Chemistry", "DemoUser", "This is exactly the late night study energy I needed. Pure jazz magic 🎷",
-     [("Jazzzed", "Glad it hit right, that's the vibe 🙏"),
+     [("Jazzzed",     "Glad it hit right, that's the vibe 🙏"),
       ("ProducedByU", "The sample flip on this is cold")]),
     ("IN THE RAIN", "YoungTiller", "The vocal chops on this are insane. Emotional and cinematic at the same time",
      [("VocaVoice", "That's everything I was going for 🎤"),
       ("DemoUser",  "Been on repeat all morning no cap")]),
     ("Don't Be Shy", "DemoUser", "This dancehall energy is infectious. Smooth and melodic 🌴",
-     [("Swayy",        "Appreciate that, more vibes coming 🙏"),
-      ("TenTens",      "The groove on this is unreal")]),
+     [("Swayy",   "Appreciate that, more vibes coming 🙏"),
+      ("TenTens", "The groove on this is unreal")]),
     ("Leave Me", "DaysNoTrace", "Rock on! Finally some raw emotional guitar-driven beats on here",
      [("Swayy",    "Different lane but I respect the energy 💪"),
       ("DemoUser", "This goes hard in the whip no cap")]),
     ("Jasmine", "TenTens", "Put this on at a house party last week, the floor went CRAZY",
      [("FakeTech", "That's what I make it for 🔊 let's collab sometime")]),
     ("Don't Worry", "DemoUser", "Pure vibes all day, this is exactly what I needed 🌊",
-     [("TenTens", "Means everything, glad it hit right 🙏"),
-      ("ProducedByKyle", "The atmosphere on this is incredible")]),
+     [("TenTens",       "Means everything, glad it hit right 🙏"),
+      ("ProducedByKyle","The atmosphere on this is incredible")]),
     ("In My Head", "ProducedByU", "Trap soul production is next level on this. Emotional and hard at the same time",
      [("YoungTiller", "That's exactly the sound I was chasing 🎧"),
       ("DemoUser",    "Been on repeat since yesterday no cap")]),
@@ -266,8 +266,6 @@ def seed():
         db.session.add(demo)
 
         # ── Create producers ──
-        # role='producer' here mirrors the upgrade routes.py performs on first upload —
-        # without it, seeded producers would still look like plain listeners.
         producer_objs = []
         for p in PRODUCERS:
             u = User(
@@ -275,24 +273,21 @@ def seed():
                 email=p["email"],
                 bio=p["bio"],
                 avatar_url=p["avatar_url"],
-                role='producer',
             )
             u.set_password(p["password"])
             db.session.add(u)
             producer_objs.append(u)
 
-        db.session.flush()  # assigns IDs before creating beats
+        db.session.flush()
 
         # ── Create beats ──
-        beat_map = {}  # title → Beat object (for linking comments)
+        beat_map = {}
         for row in BEATS:
             (title, prod_idx, genre, bpm, key, mood_tag,
              duration, licence, price, premium_price, exclusive_price,
              plays, is_trending, days_ago) = row
 
-            # Spread upload dates across the last month for algorithm freshness testing
             uploaded = now - timedelta(days=days_ago, hours=random.randint(0, 23))
-
             audio_url = AUDIO_PATHS[title]
 
             beat = Beat(
@@ -317,12 +312,10 @@ def seed():
 
         db.session.flush()
 
-        # ── Seed likes — spread across beats and users so algorithm has signal ──
+        # ── Seed likes ──
         all_users = [demo] + producer_objs
         max_plays = max(b.play_count for b in beat_map.values()) or 1
         for beat in beat_map.values():
-            # Scale like probability 0.10–0.70 relative to the most-played beat
-            # so popular beats still receive proportionally more likes.
             like_rate = 0.10 + (beat.play_count / max_plays) * 0.60
             for user in all_users:
                 if user.id != beat.producer_id and random.random() < like_rate:
@@ -330,13 +323,11 @@ def seed():
 
         db.session.flush()
 
-        # ── Seed follows — create a social graph ──
+        # ── Seed follows ──
         for i, producer in enumerate(producer_objs):
-            # Each producer follows 3 other producers
             others = [p for j, p in enumerate(producer_objs) if j != i]
             for followed in random.sample(others, min(3, len(others))):
                 producer.follow(followed)
-            # Demo user follows everyone
             demo.follow(producer)
 
         db.session.flush()
@@ -369,26 +360,6 @@ def seed():
                     created_at=now - timedelta(hours=random.randint(0, 48)),
                 )
                 db.session.add(reply)
-
-        # ── Seed wallet activity ──
-        # Demo listener: a couple of top-ups so the wallet page has activity to show.
-        for amount, days_ago in [(50, 12), (25, 5), (100, 1)]:
-            tx = top_up(demo, amount, note='Card ending 4242')
-            tx.created_at = now - timedelta(days=days_ago, hours=random.randint(0, 23))
-
-        # Producers: a handful of synthetic sales each so the studio page is meaningful.
-        # We only seed earnings for a subset of beats per producer to keep numbers varied.
-        for producer in producer_objs:
-            producer_beats = [b for b in beat_map.values() if b.producer_id == producer.id]
-            if not producer_beats:
-                continue
-            for beat in random.sample(producer_beats, min(len(producer_beats), 3)):
-                # 1-4 sales per featured beat at the beat's lease price
-                for _ in range(random.randint(1, 4)):
-                    tx = record_earning(producer, beat.price,
-                                        note=f'Sale: {beat.title}')
-                    tx.created_at = now - timedelta(days=random.randint(0, 25),
-                                                    hours=random.randint(0, 23))
 
         db.session.commit()
 
