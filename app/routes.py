@@ -761,9 +761,12 @@ def spotify_callback():
     code  = request.args.get('code', '')
     state = request.args.get('state', '')
 
-    # Reject the callback if state does not match what we stored — prevents CSRF
-    expected_state = session.pop('spotify_oauth_state', None)
+    # Reject the callback if state does not match what we stored — prevents CSRF.
+    # Use get (not pop) so a transient failure in the steps below still lets the
+    # user retry the callback without restarting from /spotify/connect.
+    expected_state = session.get('spotify_oauth_state')
     if not expected_state or state != expected_state:
+        session.pop('spotify_oauth_state', None)
         logger.warning('Spotify callback state mismatch for user %s', current_user.id)
         flash('Spotify connection failed: invalid state. Please try again.', 'danger')
         return redirect(url_for('main.edit_profile'))
@@ -816,12 +819,19 @@ def spotify_callback():
 
     try:
         db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        logger.warning('Spotify id %s already linked to another user', profile.get('id'))
+        flash('This Spotify account is already linked to another TuneFeed user.', 'danger')
+        return redirect(url_for('main.edit_profile'))
     except Exception:
         db.session.rollback()
         logger.error('DB save failed after Spotify connect for user %s', current_user.id, exc_info=True)
         flash('Could not save your Spotify connection. Please try again.', 'danger')
         return redirect(url_for('main.edit_profile'))
 
+    # Flow succeeded — drop the state value so it cannot be replayed
+    session.pop('spotify_oauth_state', None)
     flash('Spotify account connected successfully!', 'success')
     return redirect(url_for('main.edit_profile'))
 
