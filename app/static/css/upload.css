@@ -269,6 +269,91 @@
 }
 .upload-input[type="number"] { -moz-appearance: textfield; }
 
+/* ── Drag-and-drop upload zones ────────────────────────────── */
+.upload-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 20px;
+  border: 2px dashed var(--ts-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone:focus-visible {
+  border-color: var(--ts-orange-border);
+  background: var(--ts-orange-dim);
+  outline: none;
+}
+
+.upload-dropzone.is-over {
+  border-color: var(--ts-orange-light);
+  background: var(--ts-orange-dim);
+}
+
+.upload-dropzone.has-file {
+  border-style: solid;
+  border-color: var(--ts-orange-border);
+}
+
+.upload-dropzone--small {
+  padding: 18px 20px;
+}
+
+.upload-drop-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.upload-drop-icon {
+  font-size: 1.8rem;
+  color: var(--ts-text-muted);
+  transition: color 0.15s;
+}
+
+.upload-dropzone:hover .upload-drop-icon,
+.upload-dropzone:focus-visible .upload-drop-icon,
+.upload-dropzone.is-over .upload-drop-icon,
+.upload-dropzone.has-file .upload-drop-icon {
+  color: var(--ts-orange-light);
+}
+
+.upload-drop-primary {
+  font-size: 13px;
+  color: var(--ts-text-secondary);
+}
+
+.upload-drop-browse {
+  color: var(--ts-orange-light);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.upload-drop-hint {
+  font-size: 11px;
+  color: var(--ts-text-muted);
+}
+
+.upload-drop-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ts-orange-light);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 8px;
+}
+
 /* ── Mood suggestion chips ─────────────────────────────────
    Quick-fill buttons under the mood input. Clicking a chip
    sets the value of #mood_tag (handled in upload.js).
@@ -569,7 +654,7 @@
   display: grid;
   grid-template-columns: 1fr 220px;
   gap: 24px;
-  align-items: start;
+  align-items: center;
 }
 
 .upload-media-fields {
@@ -628,11 +713,25 @@
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px dashed var(--ts-border);
+  border: 2px dashed var(--ts-border);
   background: linear-gradient(135deg, rgba(217, 119, 6, 0.04), rgba(0, 212, 170, 0.04));
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-cover-frame:hover,
+.upload-cover-frame:focus-visible {
+  border-color: var(--ts-orange-border);
+  background: var(--ts-orange-dim);
+  outline: none;
+}
+
+.upload-cover-frame.is-over {
+  border-color: var(--ts-orange-light);
+  background: var(--ts-orange-dim);
 }
 
 .upload-cover-frame img {
