@@ -366,6 +366,25 @@
   bindTierHighlight('price',           '.upload-tier-basic');
   bindTierHighlight('premium_price',   '.upload-tier-premium');
   bindTierHighlight('exclusive_price', '.upload-tier-exclusive');
+
+  /* ── Currency symbol sync ───────────────────────────────────
+     Updates the prefix symbol on all three price inputs whenever
+     the currency dropdown changes. AUD/USD share $; EUR uses €;
+     GBP uses £.
+     ─────────────────────────────────────────────────────────── */
+  var CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '€', GBP: '£' };
+  var currencySelect = document.getElementById('currency');
+
+  function updateCurrencySymbols() {
+    var sym = CURRENCY_SYMBOLS[currencySelect.value] || '$';
+    document.querySelectorAll('.price-currency-sym').forEach(function (el) {
+      el.textContent = sym;
+    });
+  }
+
+  if (currencySelect) {
+    currencySelect.addEventListener('change', updateCurrencySymbols);
+  }
 })();
 
 /* ============================================================

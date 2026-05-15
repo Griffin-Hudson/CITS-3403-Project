@@ -220,6 +220,9 @@
         </div>
 
         <div class="upload-pricing-grid">
+          {% set _sym = {'AUD': '$', 'USD': '$', 'EUR': '€', 'GBP': '£'} %}
+          {% set _currency_sym = _sym.get(form.currency.data or 'AUD', '$') %}
+
           <div class="upload-tier upload-tier-basic">
             <div class="upload-tier-head">
               <span class="upload-tier-tag">Basic lease</span>
@@ -227,7 +230,7 @@
             </div>
             <label class="upload-tier-label" for="price">Price <span class="upload-required">*</span></label>
             <div class="upload-price-wrap">
-              <span class="upload-price-currency">$</span>
+              <span class="upload-price-currency price-currency-sym">{{ _currency_sym }}</span>
               {{ form.price(id="price", class="upload-price-input", min=0, step="0.01", placeholder="0", required=True) }}
             </div>
             <span class="upload-hint">Leave at 0 to release for free.</span>
@@ -240,7 +243,7 @@
             </div>
             <label class="upload-tier-label" for="premium_price">Price</label>
             <div class="upload-price-wrap">
-              <span class="upload-price-currency">$</span>
+              <span class="upload-price-currency price-currency-sym">{{ _currency_sym }}</span>
               {{ form.premium_price(id="premium_price", class="upload-price-input", min=0, step="0.01", placeholder="—") }}
             </div>
             <span class="upload-hint">Optional — skip for lease-only beats.</span>
@@ -253,7 +256,7 @@
             </div>
             <label class="upload-tier-label" for="exclusive_price">Price</label>
             <div class="upload-price-wrap">
-              <span class="upload-price-currency">$</span>
+              <span class="upload-price-currency price-currency-sym">{{ _currency_sym }}</span>
               {{ form.exclusive_price(id="exclusive_price", class="upload-price-input", min=0, step="0.01", placeholder="—") }}
             </div>
             <span class="upload-hint">Sells the beat exclusively. Optional.</span>

@@ -669,7 +669,7 @@
   margin-top: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(135deg, var(--ts-orange-dim), transparent);
   border: 1px solid var(--ts-orange-border);
   display: flex;
   align-items: center;
@@ -722,7 +722,7 @@
 .audio-player-track {
   position: relative;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ts-border);
   border-radius: 999px;
   cursor: pointer;
 }
