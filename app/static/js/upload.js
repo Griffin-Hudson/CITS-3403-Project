@@ -54,14 +54,44 @@
   }
 
   /* ── Audio preview ───────────────────────────────────────
-     Plays the local file directly via a blob url so the
-     producer can sanity-check the track before submitting.
+     Custom themed player: play/pause button, draggable
+     progress bar, current/total time. The native <audio>
+     element is kept as the source of truth for playback but
+     hidden via CSS.
      ──────────────────────────────────────────────────────── */
   const audioInput  = document.getElementById('audio_file');
   const audioBox    = document.getElementById('audio-preview');
   const audioPlayer = document.getElementById('audio-preview-player');
+  const playBtn     = document.getElementById('audio-play-btn');
+  const trackEl     = document.getElementById('audio-player-track');
+  const fillEl      = document.getElementById('audio-player-fill');
+  const thumbEl     = document.getElementById('audio-player-thumb');
+  const nameEl      = document.getElementById('audio-player-name');
+  const curEl       = document.getElementById('audio-player-current');
+  const durEl       = document.getElementById('audio-player-duration');
 
   let lastAudioBlob = null;
+
+  function fmtTime(s) {
+    if (!isFinite(s) || s < 0) return '0:00';
+    var m = Math.floor(s / 60);
+    var sec = Math.floor(s % 60);
+    return m + ':' + (sec < 10 ? '0' : '') + sec;
+  }
+
+  function setPercent(p) {
+    p = Math.max(0, Math.min(100, p));
+    if (fillEl)  fillEl.style.width  = p + '%';
+    if (thumbEl) thumbEl.style.left  = p + '%';
+  }
+
+  function setPlayIcon(playing) {
+    if (!playBtn) return;
+    var icon = playBtn.querySelector('i');
+    if (icon) icon.className = playing ? 'bi bi-pause-fill' : 'bi bi-play-fill';
+    playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    if (audioBox) audioBox.classList.toggle('is-playing', playing);
+  }
 
   function setAudioPreviewFromFile(file) {
     if (!audioBox || !audioPlayer) return;
@@ -73,20 +103,70 @@
       audioBox.hidden = true;
       audioPlayer.removeAttribute('src');
       audioPlayer.load();
+      setPlayIcon(false);
+      setPercent(0);
+      if (curEl) curEl.textContent = '0:00';
+      if (durEl) durEl.textContent = '0:00';
       return;
     }
     lastAudioBlob = URL.createObjectURL(file);
     audioPlayer.src = lastAudioBlob;
     audioBox.hidden = false;
-    audioPlayer.onerror = function () {
-      audioBox.hidden = true;
-    };
+    if (nameEl) nameEl.textContent = file.name;
+    if (curEl) curEl.textContent = '0:00';
+    if (durEl) durEl.textContent = '0:00';
+    setPercent(0);
+    setPlayIcon(false);
+    audioPlayer.onerror = function () { audioBox.hidden = true; };
   }
 
   if (audioInput) {
     audioInput.addEventListener('change', function () {
       setAudioPreviewFromFile(audioInput.files && audioInput.files[0]);
     });
+  }
+
+  if (playBtn && audioPlayer) {
+    playBtn.addEventListener('click', function () {
+      if (audioPlayer.paused) audioPlayer.play();
+      else audioPlayer.pause();
+    });
+  }
+
+  if (audioPlayer) {
+    audioPlayer.addEventListener('play',  function () { setPlayIcon(true);  });
+    audioPlayer.addEventListener('pause', function () { setPlayIcon(false); });
+    audioPlayer.addEventListener('ended', function () {
+      setPlayIcon(false);
+      setPercent(0);
+      if (curEl) curEl.textContent = '0:00';
+    });
+    audioPlayer.addEventListener('loadedmetadata', function () {
+      if (durEl) durEl.textContent = fmtTime(audioPlayer.duration);
+    });
+    audioPlayer.addEventListener('timeupdate', function () {
+      if (curEl) curEl.textContent = fmtTime(audioPlayer.currentTime);
+      if (audioPlayer.duration) {
+        setPercent((audioPlayer.currentTime / audioPlayer.duration) * 100);
+      }
+    });
+  }
+
+  if (trackEl && audioPlayer) {
+    var dragging = false;
+    function seekFromEvent(e) {
+      if (!audioPlayer.duration) return;
+      var rect = trackEl.getBoundingClientRect();
+      var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      audioPlayer.currentTime = pct * audioPlayer.duration;
+    }
+    trackEl.addEventListener('mousedown', function (e) { dragging = true; seekFromEvent(e); });
+    document.addEventListener('mousemove', function (e) { if (dragging) seekFromEvent(e); });
+    document.addEventListener('mouseup',   function ()  { dragging = false; });
+    trackEl.addEventListener('touchstart', function (e) { dragging = true; seekFromEvent(e); }, { passive: true });
+    trackEl.addEventListener('touchmove',  function (e) { if (dragging) seekFromEvent(e); }, { passive: true });
+    trackEl.addEventListener('touchend',   function ()  { dragging = false; });
   }
 
   /* ── Drop zone wiring ────────────────────────────────────
