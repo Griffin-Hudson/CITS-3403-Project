@@ -112,10 +112,7 @@ def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
 
 
 def _save_user_upload(file, user_id):
-    """Save uploaded profile picture and return the relative path.
-
-    Returns: relative path to saved file, or None if save failed
-    """
+    """Save uploaded profile picture; returns relative path or None on failure."""
     if not file or file.filename == '':
         return None
 
