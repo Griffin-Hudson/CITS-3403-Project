@@ -111,26 +111,23 @@ def _save_user_upload(file, user_id):
     if not file or file.filename == '':
         return None
 
-    if not _allowed_file(file.filename):
+    name = secure_filename(file.filename)
+    if '.' not in name:
+        return None
+    ext = name.rsplit('.', 1)[1].lower()
+    if ext not in ALLOWED_UPLOAD_EXTENSIONS:
         return None
 
-    # Ensure uploads directory exists
-    upload_dir = _upload_dir('profiles')
-    os.makedirs(upload_dir, exist_ok=True)
-
-    # Generate unique filename with user_id and timestamp
-    ext = secure_filename(file.filename).rsplit('.', 1)[1].lower()
-    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
-    filepath = os.path.join(upload_dir, filename)
-
-    # Read size from the stream, then reset so save() starts from byte 0.
     file.seek(0, 2)
     size = file.tell()
     file.seek(0)
     if size == 0 or size > MAX_UPLOAD_SIZE:
         return None
 
-    file.save(filepath)
+    upload_dir = _upload_dir('profiles')
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
+    file.save(os.path.join(upload_dir, filename))
     return f'/static/uploads/profiles/{filename}'
 
 

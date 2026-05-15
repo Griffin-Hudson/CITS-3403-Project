@@ -242,6 +242,19 @@ class TestUploadRoute:
         logout(client)
 
 
+class TestProfilePictureUpload:
+    def test_dotfile_upload_does_not_500(self, client, seeded_db):
+        """Uploading a file whose name starts with a dot (e.g. '.png') must not 500."""
+        login(client)
+        r = client.post('/profile/edit',
+                        data={'action': 'upload_picture',
+                              'profile_picture': (io.BytesIO(b'\x89PNG\r\n'), '.png')},
+                        content_type='multipart/form-data',
+                        follow_redirects=True)
+        assert r.status_code == 200, 'Dotfile upload must redirect cleanly, not 500'
+        logout(client)
+
+
 class TestStudioEarningsRoute:
     def test_studio_earnings_loads_for_user_with_beats(self, client, seeded_db):
         """Studio earnings page must load for users who have uploaded beats."""

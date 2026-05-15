@@ -370,3 +370,19 @@ class TestCommentsAPI:
         data_del = json.loads(r_del.data)
         assert data_del['reported'] is False
         logout(client)
+
+    def test_reply_to_reply_rejected(self, client, seeded_db):
+        """Posting a reply to an existing reply must return 400 — one level deep only."""
+        login(client)
+        beat_id = seeded_db['beat_id']
+        rc = client.post(f'/api/beats/{beat_id}/comments', json={'body': 'Top-level'})
+        parent_id = json.loads(rc.data)['id']
+
+        rc2 = client.post(f'/api/beats/{beat_id}/comments',
+                          json={'body': 'First reply', 'parent_id': parent_id})
+        reply_id = json.loads(rc2.data)['id']
+
+        r = client.post(f'/api/beats/{beat_id}/comments',
+                        json={'body': 'Nested reply', 'parent_id': reply_id})
+        assert r.status_code == 400, 'Reply to a reply must be rejected'
+        logout(client)

@@ -14,7 +14,7 @@ from app import create_app
 from app.models import db, User, Beat, Comment, Like, Transaction, CommentReport
 from app.routes import _safe_redirect_target
 from app.forms import _safe_url
-from app.services.wallet_service import top_up, record_purchase, record_earning
+from app.services.wallet_service import top_up, record_purchase, record_earning, purchase_beat
 from wtforms.validators import ValidationError
 
 
@@ -633,6 +633,38 @@ class TestWalletService(_AppTestCase):
         top_up(self.user, 20.0)
         db.session.commit()
         self.assertAlmostEqual(self.user.balance, 30.0)
+
+    def test_purchase_beat_skips_earning_when_producer_deleted(self):
+        """purchase_beat must not raise when beat.producer is None (deleted producer)."""
+        from sqlalchemy import text
+        buyer = _make_user(username='buyer_del', email='buyer_del@test.com')
+        db.session.add(buyer)
+        db.session.flush()
+        buyer_id = buyer.id
+        top_up(buyer, 50.0)
+        db.session.commit()
+
+        # Insert a beat with a dangling producer_id (no matching user row).
+        # FK enforcement is temporarily suspended so we can create the orphaned
+        # state that the beat.producer null-check in purchase_beat guards against.
+        db.session.execute(text('PRAGMA foreign_keys = OFF'))
+        db.session.execute(text(
+            "INSERT INTO beat (title, audio_url, producer_id, price, play_count) "
+            "VALUES ('Orphan Beat', 'https://example.com/orphan.mp3', 99999, 5.0, 0)"
+        ))
+        db.session.commit()
+        db.session.execute(text('PRAGMA foreign_keys = ON'))
+
+        beat = Beat.query.filter_by(title='Orphan Beat').first()
+        self.assertIsNotNone(beat, 'Test setup: orphan beat must exist in DB')
+        self.assertIsNone(beat.producer, 'beat.producer must be None for a dangling producer_id')
+
+        purchase_beat(buyer, beat, 'lease', 'balance')
+        db.session.commit()
+
+        from app.models import Purchase
+        p = Purchase.query.filter_by(buyer_id=buyer_id, beat_id=beat.id).first()
+        self.assertIsNotNone(p, 'Purchase record must be created even when producer row is gone')
 
 
 # ---------------------------------------------------------------------------
