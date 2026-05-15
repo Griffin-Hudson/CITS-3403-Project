@@ -623,3 +623,10 @@ select.ts-input {
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }
+
+/* native option list — keep dark bg + light text so it matches
+   the select itself, otherwise the popup is white with gray text */
+select.ts-input option {
+  background-color: #1a1a1a;
+  color: var(--ts-text-primary);
+}
