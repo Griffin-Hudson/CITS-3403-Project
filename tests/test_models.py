@@ -14,7 +14,7 @@ from app import create_app
 from app.models import db, User, Beat, Comment, Like, Transaction, CommentReport
 from app.routes import _safe_redirect_target
 from app.forms import _safe_url
-from app.services.wallet_service import top_up, record_purchase, record_earning
+from app.services.wallet_service import top_up, record_purchase, record_earning, purchase_beat
 from wtforms.validators import ValidationError
 
 
@@ -634,6 +634,38 @@ class TestWalletService(_AppTestCase):
         db.session.commit()
         self.assertAlmostEqual(self.user.balance, 30.0)
 
+    def test_purchase_beat_skips_earning_when_producer_deleted(self):
+        """purchase_beat must not raise when beat.producer is None (deleted producer)."""
+        from sqlalchemy import text
+        buyer = _make_user(username='buyer_del', email='buyer_del@test.com')
+        db.session.add(buyer)
+        db.session.flush()
+        buyer_id = buyer.id
+        top_up(buyer, 50.0)
+        db.session.commit()
+
+        # Insert a beat with a dangling producer_id (no matching user row).
+        # FK enforcement is temporarily suspended so we can create the orphaned
+        # state that the beat.producer null-check in purchase_beat guards against.
+        db.session.execute(text('PRAGMA foreign_keys = OFF'))
+        db.session.execute(text(
+            "INSERT INTO beat (title, audio_url, producer_id, price, play_count) "
+            "VALUES ('Orphan Beat', 'https://example.com/orphan.mp3', 99999, 5.0, 0)"
+        ))
+        db.session.commit()
+        db.session.execute(text('PRAGMA foreign_keys = ON'))
+
+        beat = Beat.query.filter_by(title='Orphan Beat').first()
+        self.assertIsNotNone(beat, 'Test setup: orphan beat must exist in DB')
+        self.assertIsNone(beat.producer, 'beat.producer must be None for a dangling producer_id')
+
+        purchase_beat(buyer, beat, 'lease', 'balance')
+        db.session.commit()
+
+        from app.models import Purchase
+        p = Purchase.query.filter_by(buyer_id=buyer_id, beat_id=beat.id).first()
+        self.assertIsNotNone(p, 'Purchase record must be created even when producer row is gone')
+
 
 # ---------------------------------------------------------------------------
 # 11. _safe_redirect_target (security helper — no DB needed)
@@ -721,6 +753,62 @@ class TestSafeUrlValidator(unittest.TestCase):
     def test_protocol_relative_url_rejected(self):
         with self.assertRaises(ValidationError):
             self._run('//evil.com/steal')
+
+
+# ---------------------------------------------------------------------------
+# 13. Spotify connection fields
+# ---------------------------------------------------------------------------
+
+class TestSpotifyUser(_AppTestCase):
+    """User.spotify_connected, spotify fields — 6 tests."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = _make_user()
+        db.session.add(self.user)
+        db.session.commit()
+
+    def test_spotify_not_connected_by_default(self):
+        self.assertFalse(
+            self.user.spotify_connected,
+            'A new user must not have Spotify connected by default',
+        )
+
+    def test_spotify_id_none_by_default(self):
+        self.assertIsNone(self.user.spotify_id)
+
+    def test_spotify_connected_true_when_id_set(self):
+        self.user.spotify_id = 'test_spotify_id'
+        db.session.commit()
+        self.assertTrue(self.user.spotify_connected)
+
+    def test_spotify_display_name_persists(self):
+        self.user.spotify_id           = 'abc123'
+        self.user.spotify_display_name = 'TestArtist'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_display_name, 'TestArtist')
+
+    def test_spotify_url_persists(self):
+        self.user.spotify_id  = 'abc123'
+        self.user.spotify_url = 'https://open.spotify.com/user/abc123'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_url, 'https://open.spotify.com/user/abc123')
+
+    def test_spotify_artist_url_persists(self):
+        self.user.spotify_id         = 'abc123'
+        self.user.spotify_artist_url = 'https://open.spotify.com/artist/abc123'
+        db.session.commit()
+        fetched = db.session.get(User, self.user.id)
+        self.assertEqual(fetched.spotify_artist_url, 'https://open.spotify.com/artist/abc123')
+
+    def test_clearing_spotify_id_disconnects(self):
+        self.user.spotify_id = 'abc123'
+        db.session.commit()
+        self.user.spotify_id = None
+        db.session.commit()
+        self.assertFalse(self.user.spotify_connected)
 
 
 # ---------------------------------------------------------------------------

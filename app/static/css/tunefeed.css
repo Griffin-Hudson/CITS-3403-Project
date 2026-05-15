@@ -15,6 +15,10 @@
   --ts-orange-dim:    rgba(217, 119, 6, 0.12);      /* subtle tinted fills */
   --ts-orange-border: rgba(217, 119, 6, 0.28);      /* focus ring / divider */
   --ts-teal:          #00d4aa;                      /* secondary accent (mood tags, free badge) */
+  --ts-spotify:        #1DB954;                     /* Spotify brand green */
+  --ts-spotify-hover:  #1ed760;                     /* Spotify green, lighter hover state */
+  --ts-spotify-dim:    rgba(29, 185, 84, 0.12);     /* Spotify tinted fill */
+  --ts-spotify-border: rgba(29, 185, 84, 0.30);     /* Spotify badge border */
 
   --ts-bg:      #0d0d14;                            /* page background */
   --ts-surface: #161622;                            /* card / form surface */

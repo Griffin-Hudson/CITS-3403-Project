@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -82,12 +82,59 @@ def create_app(config_class=Config):
             response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
         return response
 
+    def _is_api(req):
+        return req.path.startswith('/api/')
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        if _is_api(request):
+            return jsonify({'error': 'Bad request'}), 400
+        return render_template('errors/404.html'), 400
+
+    @app.errorhandler(401)
+    def unauthorized(e):
+        if _is_api(request):
+            return jsonify({'error': 'Authentication required'}), 401
+        return render_template('errors/404.html'), 401
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        if _is_api(request):
+            return jsonify({'error': 'Forbidden'}), 403
+        return render_template('errors/404.html'), 403
+
     @app.errorhandler(404)
     def not_found(e):
+        if _is_api(request):
+            return jsonify({'error': 'Not found'}), 404
         return render_template('errors/404.html'), 404
+
+    @app.errorhandler(409)
+    def conflict(e):
+        if _is_api(request):
+            return jsonify({'error': 'Conflict'}), 409
+        return render_template('errors/404.html'), 409
+
+    @app.errorhandler(405)
+    def method_not_allowed(e):
+        if _is_api(request):
+            resp = jsonify({'error': 'Method not allowed'})
+            # RFC 7231 §6.5.5: 405 MUST include Allow listing the permitted methods
+            if hasattr(e, 'valid_methods') and e.valid_methods:
+                resp.headers['Allow'] = ', '.join(sorted(e.valid_methods))
+            return resp, 405
+        return render_template('errors/404.html'), 405
+
+    @app.errorhandler(429)
+    def rate_limit_exceeded(e):
+        if _is_api(request):
+            return jsonify({'error': 'Too many requests. Slow down and retry.'}), 429
+        return render_template('errors/404.html'), 429
 
     @app.errorhandler(500)
     def server_error(e):
+        if _is_api(request):
+            return jsonify({'error': 'Internal server error'}), 500
         return render_template('errors/500.html'), 500
 
     return app

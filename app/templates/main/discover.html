@@ -70,8 +70,8 @@
   {% if trending_beats %}
     <div class="beats-grid">
       {% for beat in trending_beats %}
-        {# Each beat card navigates to /feed via JS (data-href) so <a> nesting is avoided #}
-        <div class="beat-card" data-href="{{ url_for('main.feed') }}" role="link" tabindex="0">
+        {# Each beat card opens the feed focused on this beat while keeping the producer link valid HTML. #}
+        <div class="beat-card" data-href="{{ url_for('main.feed', beat=beat.id) }}" role="link" tabindex="0">
 
           <div class="beat-card-body">
             {% if beat.genre %}
@@ -127,7 +127,7 @@
   {% if new_beats %}
     <div class="beats-grid">
       {% for beat in new_beats %}
-        <div class="beat-card" data-href="{{ url_for('main.feed') }}" role="link" tabindex="0">
+        <div class="beat-card" data-href="{{ url_for('main.feed', beat=beat.id) }}" role="link" tabindex="0">
 
           <div class="beat-card-body">
             {% if beat.genre %}

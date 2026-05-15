@@ -410,3 +410,37 @@
     font-size: 10px;
   }
 }
+
+
+/* ── Spotify Verified badge ── */
+.spotify-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 10px;
+  padding: 3px 10px 3px 7px;
+  background: var(--ts-spotify-dim);
+  border: 1px solid var(--ts-spotify-border);
+  border-radius: 100px;
+}
+
+.spotify-icon {
+  width: 13px;
+  height: 13px;
+  fill: var(--ts-spotify);
+  flex-shrink: 0;
+}
+
+.spotify-badge-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ts-spotify);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spotify-badge-label:hover {
+  color: var(--ts-spotify-hover);
+  text-decoration: underline;
+}

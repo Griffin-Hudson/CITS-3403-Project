@@ -71,7 +71,7 @@ def purchase_beat(buyer, beat, tier, method):
             note=f'{note} (card demo)',
         ))
 
-    if beat.producer_id and beat.producer_id != buyer.id:
+    if beat.producer_id and beat.producer_id != buyer.id and beat.producer:
         record_earning(beat.producer, price, note=f'Sale — "{beat.title}" ({label})')
 
     purchase = Purchase(
