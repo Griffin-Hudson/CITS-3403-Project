@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, make_response, render_template, request
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -117,13 +117,19 @@ def create_app(config_class=Config):
 
     @app.errorhandler(405)
     def method_not_allowed(e):
+        # RFC 7231 §6.5.5: 405 MUST include Allow listing the permitted methods
+        allow_header = None
+        if hasattr(e, 'valid_methods') and e.valid_methods:
+            allow_header = ', '.join(sorted(e.valid_methods))
         if _is_api(request):
             resp = jsonify({'error': 'Method not allowed'})
-            # RFC 7231 §6.5.5: 405 MUST include Allow listing the permitted methods
-            if hasattr(e, 'valid_methods') and e.valid_methods:
-                resp.headers['Allow'] = ', '.join(sorted(e.valid_methods))
+            if allow_header:
+                resp.headers['Allow'] = allow_header
             return resp, 405
-        return render_template('errors/404.html'), 405
+        resp = make_response(render_template('errors/404.html'), 405)
+        if allow_header:
+            resp.headers['Allow'] = allow_header
+        return resp
 
     @app.errorhandler(429)
     def rate_limit_exceeded(e):

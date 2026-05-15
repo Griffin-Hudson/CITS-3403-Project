@@ -66,6 +66,12 @@ class TestBeatDetailRoute:
         r = client.get(f'/beats/{beat_id}')
         assert r.status_code == 200
         assert f'/checkout/{beat_id}?tier=lease'.encode() in r.data
+        # logged in as the producer the checkout link should be hidden
+        # since you cant buy your own beat
+        login(client)
+        r = client.get(f'/beats/{beat_id}')
+        assert f'/checkout/{beat_id}?tier=lease'.encode() not in r.data
+        logout(client)
 
     def test_beat_detail_404_for_missing_beat(self, client):
         r = client.get('/beats/999999')
@@ -207,13 +213,18 @@ class TestUploadRoute:
             assert beat.producer_id == seeded_db['user_id']
         logout(client)
 
-    def test_upload_missing_audio_rejected(self, client, seeded_db):
+    def test_upload_missing_audio_rejected(self, client, seeded_db, app):
         """Submitting the upload form without an audio file must not create a beat."""
         login(client)
         form = {k: v for k, v in self._base_form().items() if k != 'audio_file'}
         r = client.post('/upload', data=form,
                         content_type='multipart/form-data', follow_redirects=True)
         assert r.status_code == 200
+        # status 200 is also what success returns, so check the db directly
+        with app.app_context():
+            from app.models import Beat
+            assert Beat.query.filter_by(title='My New Beat').first() is None, \
+                'Beat must not be created when audio file is missing'
         logout(client)
 
     def test_upload_bad_extension_rejected(self, client, seeded_db, app):
