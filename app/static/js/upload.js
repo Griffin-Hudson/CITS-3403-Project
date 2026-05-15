@@ -222,9 +222,14 @@
       var files = e.dataTransfer && e.dataTransfer.files;
       if (!files || !files[0]) return;
       if (!acceptsFile(input, files[0])) return;
-      var dt = new DataTransfer();
-      dt.items.add(files[0]);
-      input.files = dt.files;
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+      } catch (_) {
+        /* DataTransfer programmatic assignment unsupported — drop silently ignored */
+        return;
+      }
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
 

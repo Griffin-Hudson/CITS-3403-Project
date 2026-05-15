@@ -634,10 +634,23 @@ class TestUploadPage(_SeleniumBase):
                 file_input,
             )
             file_input.send_keys(tmp_path)
+
+            # Audio preview player must appear (PR #70 custom player)
             wait.until(EC.visibility_of_element_located((By.ID, 'audio-preview')))
             self.assertTrue(
                 self.driver.find_element(By.ID, 'audio-preview').is_displayed(),
                 'Audio preview must become visible after a file is selected',
+            )
+
+            # Dropzone filename label must show the selected file (PR #69 dropzone)
+            drop_name = self.driver.find_element(By.ID, 'audio-drop-name')
+            self.assertFalse(
+                drop_name.get_attribute('hidden'),
+                'Filename label (#audio-drop-name) must become visible after file selection',
+            )
+            self.assertTrue(
+                drop_name.text.endswith('.mp3'),
+                'Filename label must display the selected filename',
             )
         finally:
             try:
