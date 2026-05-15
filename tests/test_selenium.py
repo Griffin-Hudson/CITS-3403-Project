@@ -625,8 +625,18 @@ class TestUploadPage(_SeleniumBase):
         wait = WebDriverWait(self.driver, _WAIT)
         wait.until(EC.presence_of_element_located((By.ID, 'audio-drop')))
 
-        fd, tmp_path = tempfile.mkstemp(suffix='.mp3')
+        # Minimal valid WAV (48 bytes): 1-channel 44100Hz 16-bit PCM, 2 silent samples.
+        # An empty file triggers onerror on the audio element, which immediately
+        # re-hides the preview — a real (but tiny) audio file avoids that.
+        _SILENT_WAV = (
+            b'RIFF\x28\x00\x00\x00WAVE'
+            b'fmt \x10\x00\x00\x00\x01\x00\x01\x00'
+            b'\x44\xac\x00\x00\x88\x58\x01\x00\x02\x00\x10\x00'
+            b'data\x04\x00\x00\x00\x00\x00\x00\x00'
+        )
+        fd, tmp_path = tempfile.mkstemp(suffix='.wav')
         try:
+            os.write(fd, _SILENT_WAV)
             os.close(fd)
             file_input = self.driver.find_element(By.ID, 'audio_file')
             self.driver.execute_script(
@@ -649,7 +659,7 @@ class TestUploadPage(_SeleniumBase):
                 'Filename label (#audio-drop-name) must become visible after file selection',
             )
             self.assertTrue(
-                drop_name.text.endswith('.mp3'),
+                drop_name.text.endswith('.wav'),
                 'Filename label must display the selected filename',
             )
         finally:
