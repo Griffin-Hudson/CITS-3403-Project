@@ -211,6 +211,22 @@ class TestUploadRoute:
             beat = Beat.query.filter_by(title='My New Beat').first()
             assert beat is not None, 'Beat must be created in the database'
             assert beat.producer_id == seeded_db['user_id']
+            # form default currency is AUD when the field is omitted
+            assert beat.currency == 'AUD'
+        logout(client)
+
+    def test_upload_stores_chosen_currency(self, client, seeded_db, app):
+        """Posting with currency=USD must persist that on the new beat."""
+        login(client)
+        form = {**self._base_form(), 'title': 'Currency Test Beat', 'currency': 'USD'}
+        r = client.post('/upload', data=form,
+                        content_type='multipart/form-data', follow_redirects=True)
+        assert r.status_code == 200
+        with app.app_context():
+            from app.models import Beat
+            beat = Beat.query.filter_by(title='Currency Test Beat').first()
+            assert beat is not None
+            assert beat.currency == 'USD'
         logout(client)
 
     def test_upload_missing_audio_rejected(self, client, seeded_db, app):

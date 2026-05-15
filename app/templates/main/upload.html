@@ -203,6 +203,10 @@
             <label class="upload-label" for="licence_type">Default licence</label>
             {{ form.licence_type(id="licence_type", class="ts-input upload-input") }}
           </div>
+          <div class="upload-field">
+            <label class="upload-label" for="currency">Currency</label>
+            {{ form.currency(id="currency", class="ts-input upload-input") }}
+          </div>
         </div>
 
         <div class="upload-pricing-grid">
@@ -211,7 +215,7 @@
               <span class="upload-tier-tag">Basic lease</span>
               <span class="upload-tier-cap">MP3 · non-exclusive</span>
             </div>
-            <label class="upload-tier-label" for="price">Price (USD) <span class="upload-required">*</span></label>
+            <label class="upload-tier-label" for="price">Price <span class="upload-required">*</span></label>
             <div class="upload-price-wrap">
               <span class="upload-price-currency">$</span>
               {{ form.price(id="price", class="upload-price-input", min=0, step="0.01", placeholder="0", required=True) }}
@@ -224,7 +228,7 @@
               <span class="upload-tier-tag">Premium</span>
               <span class="upload-tier-cap">WAV · trackouts</span>
             </div>
-            <label class="upload-tier-label" for="premium_price">Price (USD)</label>
+            <label class="upload-tier-label" for="premium_price">Price</label>
             <div class="upload-price-wrap">
               <span class="upload-price-currency">$</span>
               {{ form.premium_price(id="premium_price", class="upload-price-input", min=0, step="0.01", placeholder="—") }}
@@ -237,7 +241,7 @@
               <span class="upload-tier-tag">Exclusive</span>
               <span class="upload-tier-cap">Full rights buyout</span>
             </div>
-            <label class="upload-tier-label" for="exclusive_price">Price (USD)</label>
+            <label class="upload-tier-label" for="exclusive_price">Price</label>
             <div class="upload-price-wrap">
               <span class="upload-price-currency">$</span>
               {{ form.exclusive_price(id="exclusive_price", class="upload-price-input", min=0, step="0.01", placeholder="—") }}

@@ -392,6 +392,7 @@ def upload():
             price=form.price.data,
             premium_price=form.premium_price.data or None,
             exclusive_price=form.exclusive_price.data or None,
+            currency=form.currency.data,
             audio_url=audio_path,
             cover_url=cover_path,
             producer_id=current_user.id,

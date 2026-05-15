@@ -625,8 +625,8 @@ class TestWalletService(_AppTestCase):
         # state that the beat.producer null-check in purchase_beat guards against.
         db.session.execute(text('PRAGMA foreign_keys = OFF'))
         db.session.execute(text(
-            "INSERT INTO beat (title, audio_url, producer_id, price, play_count) "
-            "VALUES ('Orphan Beat', 'https://example.com/orphan.mp3', 99999, 5.0, 0)"
+            "INSERT INTO beat (title, audio_url, producer_id, price, play_count, currency) "
+            "VALUES ('Orphan Beat', 'https://example.com/orphan.mp3', 99999, 5.0, 0, 'USD')"
         ))
         db.session.commit()
         db.session.execute(text('PRAGMA foreign_keys = ON'))
