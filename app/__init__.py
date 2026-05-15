@@ -85,23 +85,30 @@ def create_app(config_class=Config):
     def _is_api(req):
         return req.path.startswith('/api/')
 
+    def _render_error(code, title, message):
+        return render_template('errors/generic.html',
+                               status_code=code, title=title, message=message), code
+
     @app.errorhandler(400)
     def bad_request(e):
         if _is_api(request):
             return jsonify({'error': 'Bad request'}), 400
-        return render_template('errors/404.html'), 400
+        return _render_error(400, 'Bad Request',
+                             'The request could not be understood. Please check the form and try again.')
 
     @app.errorhandler(401)
     def unauthorized(e):
         if _is_api(request):
             return jsonify({'error': 'Authentication required'}), 401
-        return render_template('errors/404.html'), 401
+        return _render_error(401, 'Sign In Required',
+                             'You need to be signed in to view this page.')
 
     @app.errorhandler(403)
     def forbidden(e):
         if _is_api(request):
             return jsonify({'error': 'Forbidden'}), 403
-        return render_template('errors/404.html'), 403
+        return _render_error(403, 'Forbidden',
+                             'You do not have permission to access this page.')
 
     @app.errorhandler(404)
     def not_found(e):
@@ -113,7 +120,8 @@ def create_app(config_class=Config):
     def conflict(e):
         if _is_api(request):
             return jsonify({'error': 'Conflict'}), 409
-        return render_template('errors/404.html'), 409
+        return _render_error(409, 'Conflict',
+                             'That action conflicts with the current state. Please refresh and try again.')
 
     @app.errorhandler(405)
     def method_not_allowed(e):
@@ -126,7 +134,15 @@ def create_app(config_class=Config):
             if allow_header:
                 resp.headers['Allow'] = allow_header
             return resp, 405
-        resp = make_response(render_template('errors/404.html'), 405)
+        resp = make_response(
+            render_template(
+                'errors/generic.html',
+                status_code=405,
+                title='Method Not Allowed',
+                message='That action is not allowed on this page.',
+            ),
+            405,
+        )
         if allow_header:
             resp.headers['Allow'] = allow_header
         return resp
@@ -135,7 +151,8 @@ def create_app(config_class=Config):
     def rate_limit_exceeded(e):
         if _is_api(request):
             return jsonify({'error': 'Too many requests. Slow down and retry.'}), 429
-        return render_template('errors/404.html'), 429
+        return _render_error(429, 'Too Many Requests',
+                             'Slow down and try again in a moment.')
 
     @app.errorhandler(500)
     def server_error(e):
