@@ -89,6 +89,73 @@
     });
   }
 
+  /* ── Drop zone wiring ────────────────────────────────────
+     Handles click-to-browse and drag-and-drop for file inputs.
+     ──────────────────────────────────────────────────────── */
+  function acceptsFile(input, file) {
+    var accept = (input.accept || '').trim();
+    if (!accept) return true;
+    var name = file.name.toLowerCase();
+    var mime = (file.type || '').toLowerCase();
+    return accept.split(',').some(function (p) {
+      p = p.trim().toLowerCase();
+      if (p.startsWith('.')) return name.endsWith(p);
+      if (p.endsWith('/*')) return mime.startsWith(p.slice(0, -1));
+      return mime === p;
+    });
+  }
+
+  function wireDropzone(zoneId, input, nameId) {
+    var zone   = document.getElementById(zoneId);
+    var nameEl = nameId ? document.getElementById(nameId) : null;
+    if (!zone || !input) return;
+
+    var fileClass = (zoneId === 'cover-frame') ? 'has-cover' : 'has-file';
+
+    function markFile(file) {
+      if (!file) return;
+      if (nameEl) { nameEl.textContent = file.name; nameEl.hidden = false; }
+      zone.classList.add(fileClass);
+    }
+
+    zone.addEventListener('click', function (e) {
+      if (e.target === input) return;
+      input.click();
+    });
+
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+
+    zone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      zone.classList.add('is-over');
+    });
+
+    zone.addEventListener('dragleave', function (e) {
+      if (!zone.contains(e.relatedTarget)) zone.classList.remove('is-over');
+    });
+
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      zone.classList.remove('is-over');
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || !files[0]) return;
+      if (!acceptsFile(input, files[0])) return;
+      var dt = new DataTransfer();
+      dt.items.add(files[0]);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    input.addEventListener('change', function () {
+      markFile(input.files && input.files[0]);
+    });
+  }
+
+  wireDropzone('audio-drop', audioInput, 'audio-drop-name');
+  wireDropzone('cover-frame', coverInput, null);
+
   /* ── Multi-tag system ────────────────────────────────────
      Hidden input stores comma-separated tags. Visual box
      shows pill spans + a transparent text input. Chips

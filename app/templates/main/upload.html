@@ -151,8 +151,13 @@
           <div class="upload-media-fields">
             <div class="upload-field">
               <label class="upload-label" for="audio_file">Audio file <span class="upload-required">*</span></label>
-              {{ form.audio_file(id="audio_file", class="ts-input upload-input", accept=".mp3,.wav,.m4a,.ogg") }}
-              <span class="upload-hint">MP3, WAV, M4A, or OGG. Up to 50 MB.</span>
+              <div class="upload-dropzone" id="audio-drop" role="button" tabindex="0" aria-label="Select audio file">
+                {{ form.audio_file(id="audio_file", class="upload-drop-input", accept=".mp3,.wav,.m4a,.ogg") }}
+                <i class="bi bi-cloud-arrow-up upload-drop-icon"></i>
+                <span class="upload-drop-primary">Drag &amp; drop or <span class="upload-drop-browse">browse</span></span>
+                <span class="upload-drop-hint">MP3, WAV, M4A, or OGG &mdash; up to 50 MB</span>
+                <span class="upload-drop-name" id="audio-drop-name" hidden></span>
+              </div>
 
               <div class="upload-audio-preview" id="audio-preview" hidden>
                 <div class="upload-audio-preview-head">
@@ -163,25 +168,19 @@
               </div>
             </div>
 
-            <div class="upload-field">
-              <label class="upload-label" for="cover_file">Cover image</label>
-              {{ form.cover_file(id="cover_file", class="ts-input upload-input", accept=".png,.jpg,.jpeg,.webp") }}
-              <span class="upload-hint">Square PNG/JPG/WebP works best. Up to 5 MB. Optional.</span>
-            </div>
           </div>
 
           <div class="upload-cover-preview" aria-live="polite">
-            <div class="upload-cover-frame" id="cover-frame">
+            <label class="upload-label" for="cover_file">Cover image</label>
+            <div class="upload-cover-frame" id="cover-frame" role="button" tabindex="0" aria-label="Select cover image">
+              {{ form.cover_file(id="cover_file", class="upload-drop-input", accept=".png,.jpg,.jpeg,.webp") }}
               <img id="cover-preview-img" alt="Cover preview" hidden />
               <div class="upload-cover-empty" id="cover-empty">
                 <i class="bi bi-image"></i>
-                <span>Cover preview</span>
+                <span>Click or drag</span>
               </div>
             </div>
-            <div class="upload-cover-meta">
-              <strong>Cover preview</strong>
-              <span>Updates as you paste a URL.</span>
-            </div>
+            <span class="upload-hint" style="text-align:center">Square PNG/JPG/WebP &mdash; up to 5 MB. Optional.</span>
           </div>
         </div>
       </section>
