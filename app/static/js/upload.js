@@ -251,7 +251,7 @@
   const tagsType    = document.getElementById('tags-type');
   const chipRow     = document.querySelector('.upload-chip-row[data-target="mood_tag"]');
   const chips       = chipRow ? chipRow.querySelectorAll('.upload-chip') : [];
-  const MAX_TAGS    = 5;
+  const MAX_TAGS    = 3;
 
   function getTags() {
     const v = (hiddenInput ? hiddenInput.value : '').trim();

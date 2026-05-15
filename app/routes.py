@@ -37,6 +37,7 @@ MAX_BEAT_AUDIO_SIZE_MB = 50
 MAX_BEAT_AUDIO_SIZE    = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
 MAX_BEAT_COVER_SIZE_MB = 5
 MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
+MAX_MOOD_TAGS = 3
 
 VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
@@ -379,12 +380,18 @@ def upload():
                 flash(f'Cover must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB} MB.', 'danger')
                 return render_template('main/upload.html', form=form)
 
+        raw_tags = [t.strip() for t in (form.mood_tag.data or '').split(',') if t.strip()]
+        if len(raw_tags) > MAX_MOOD_TAGS:
+            flash(f'You can add up to {MAX_MOOD_TAGS} tags.', 'danger')
+            return render_template('main/upload.html', form=form)
+        mood_tag_value = ','.join(raw_tags)
+
         beat = Beat(
             title=form.title.data,
             genre=form.genre.data,
             bpm=form.bpm.data,
             key=form.key.data,
-            mood_tag=form.mood_tag.data,
+            mood_tag=mood_tag_value,
             licence_type=form.licence_type.data,
             price=form.price.data,
             premium_price=form.premium_price.data or None,
