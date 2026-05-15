@@ -222,9 +222,14 @@
       var files = e.dataTransfer && e.dataTransfer.files;
       if (!files || !files[0]) return;
       if (!acceptsFile(input, files[0])) return;
-      var dt = new DataTransfer();
-      dt.items.add(files[0]);
-      input.files = dt.files;
+      try {
+        var dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+      } catch (_) {
+        /* DataTransfer programmatic assignment unsupported — drop silently ignored */
+        return;
+      }
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
@@ -246,7 +251,7 @@
   const tagsType    = document.getElementById('tags-type');
   const chipRow     = document.querySelector('.upload-chip-row[data-target="mood_tag"]');
   const chips       = chipRow ? chipRow.querySelectorAll('.upload-chip') : [];
-  const MAX_TAGS    = 5;
+  const MAX_TAGS    = 3;
 
   function getTags() {
     const v = (hiddenInput ? hiddenInput.value : '').trim();
@@ -366,6 +371,25 @@
   bindTierHighlight('price',           '.upload-tier-basic');
   bindTierHighlight('premium_price',   '.upload-tier-premium');
   bindTierHighlight('exclusive_price', '.upload-tier-exclusive');
+
+  /* ── Currency symbol sync ───────────────────────────────────
+     Updates the prefix symbol on all three price inputs whenever
+     the currency dropdown changes. AUD/USD share $; EUR uses €;
+     GBP uses £.
+     ─────────────────────────────────────────────────────────── */
+  var CURRENCY_SYMBOLS = { AUD: '$', USD: '$', EUR: '€', GBP: '£' };
+  var currencySelect = document.getElementById('currency');
+
+  function updateCurrencySymbols() {
+    var sym = CURRENCY_SYMBOLS[currencySelect.value] || '$';
+    document.querySelectorAll('.price-currency-sym').forEach(function (el) {
+      el.textContent = sym;
+    });
+  }
+
+  if (currencySelect) {
+    currencySelect.addEventListener('change', updateCurrencySymbols);
+  }
 })();
 
 /* ============================================================

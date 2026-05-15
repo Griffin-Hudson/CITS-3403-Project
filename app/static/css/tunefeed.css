@@ -31,6 +31,10 @@
   --ts-border:  rgba(255, 255, 255, 0.07);          /* subtle separator line */
   --radius-xl:  24px;                               /* rounded card corners */
   --ts-nav-height: 58px;
+
+  --ts-white:            #fff;                      /* pure white — button/icon text on coloured backgrounds */
+  --ts-orange-glow:      rgba(217, 119, 6, 0.30);   /* button shadow at rest */
+  --ts-orange-glow-hover: rgba(217, 119, 6, 0.40);  /* button shadow on hover */
 }
 
 /* ── Box-model reset ────────────────────────────────────────
@@ -627,6 +631,6 @@ select.ts-input {
 /* native option list — keep dark bg + light text so it matches
    the select itself, otherwise the popup is white with gray text */
 select.ts-input option {
-  background-color: #1a1a1a;
+  background-color: var(--ts-surface);
   color: var(--ts-text-primary);
 }

@@ -350,6 +350,7 @@ def post_comment(beat_id):
 
 
 @api.route('/comments/<int:comment_id>/like', methods=['POST'])
+@limiter.limit('60 per minute')
 def toggle_comment_like(comment_id):
     """Toggle like on a comment. Removes any dislike first (mutually exclusive)."""
     if not current_user.is_authenticated:
@@ -371,6 +372,7 @@ def toggle_comment_like(comment_id):
 
 
 @api.route('/comments/<int:comment_id>/dislike', methods=['POST'])
+@limiter.limit('60 per minute')
 def toggle_comment_dislike(comment_id):
     """Toggle dislike on a comment. Removes any like first (mutually exclusive). Client hides the comment on dislike."""
     if not current_user.is_authenticated:
@@ -392,6 +394,7 @@ def toggle_comment_dislike(comment_id):
 
 
 @api.route('/comments/<int:comment_id>/report', methods=['POST'])
+@limiter.limit('10 per minute')
 def report_comment(comment_id):
     if not current_user.is_authenticated:
         return jsonify({'error': 'Authentication required'}), 401
@@ -415,6 +418,7 @@ def report_comment(comment_id):
 
 
 @api.route('/comments/<int:comment_id>/report', methods=['DELETE'])
+@limiter.limit('20 per minute')
 def unreport_comment(comment_id):
     """Undo a previous report by the current user. Decrements the comment's report count."""
     if not current_user.is_authenticated:
@@ -520,6 +524,7 @@ def spotify_status():
 
 
 @api.route('/comments/<int:comment_id>', methods=['DELETE'])
+@limiter.limit('30 per minute')
 def delete_comment(comment_id):
     """Permanently delete a comment. Only the comment's author is allowed."""
     if not current_user.is_authenticated:

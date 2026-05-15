@@ -220,7 +220,7 @@ class Beat(db.Model):
     price           = db.Column(db.Float, nullable=False, default=0.0)
     premium_price   = db.Column(db.Float, nullable=True)
     exclusive_price = db.Column(db.Float, nullable=True)
-    currency        = db.Column(db.String(3), nullable=False, default='USD')
+    currency        = db.Column(db.String(3), nullable=False, default='AUD')
     play_count   = db.Column(db.Integer,     nullable=False, default=0,  index=True)
     is_trending  = db.Column(db.Boolean,     default=False)
     uploaded_at  = db.Column(db.DateTime,    default=datetime.utcnow,   index=True)
@@ -251,8 +251,8 @@ class Like(db.Model):
     __tablename__ = 'like'
 
     id       = db.Column(db.Integer, primary_key=True)
-    user_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    beat_id  = db.Column(db.Integer, db.ForeignKey('beat.id'), nullable=False)
+    user_id  = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    beat_id  = db.Column(db.Integer, db.ForeignKey('beat.id'), nullable=False, index=True)
     liked_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (db.UniqueConstraint('user_id', 'beat_id', name='unique_like'),)
@@ -269,8 +269,8 @@ class Purchase(db.Model):
     __tablename__ = 'purchase'
 
     id           = db.Column(db.Integer, primary_key=True)
-    buyer_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    beat_id      = db.Column(db.Integer, db.ForeignKey('beat.id'), nullable=False)
+    buyer_id     = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    beat_id      = db.Column(db.Integer, db.ForeignKey('beat.id'), nullable=False, index=True)
     price_paid   = db.Column(db.Float,   nullable=False)
     licence_type = db.Column(db.String(64), nullable=True)
     purchased_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -287,9 +287,9 @@ class Comment(db.Model):
     __tablename__ = 'comment'
 
     id           = db.Column(db.Integer, primary_key=True)
-    beat_id      = db.Column(db.Integer, db.ForeignKey('beat.id'),    nullable=False)
-    author_id    = db.Column(db.Integer, db.ForeignKey('user.id'),    nullable=False)
-    parent_id    = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)
+    beat_id      = db.Column(db.Integer, db.ForeignKey('beat.id'),    nullable=False, index=True)
+    author_id    = db.Column(db.Integer, db.ForeignKey('user.id'),    nullable=False, index=True)
+    parent_id    = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True,  index=True)
     body         = db.Column(db.Text,    nullable=False)
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
     report_count = db.Column(db.Integer,  default=0)

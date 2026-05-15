@@ -1,7 +1,7 @@
 /* ============================================================
    TUNEFEED — Upload (Producer Studio)
-   Multi-section beat upload form. Reuses the global design
-   tokens from tunefeed.css; no new colours introduced here.
+   Multi-section beat upload form. Extends the global design
+   tokens from tunefeed.css.
    ============================================================ */
 
 /* ── Page wrapper ──────────────────────────────────────────
@@ -253,6 +253,8 @@
   color: var(--ts-text-muted);
   letter-spacing: 0.01em;
 }
+
+.upload-hint--center { text-align: center; }
 
 /* Slight padding boost over .ts-input for a more spacious feel
    on a longer form, while still inheriting the focus ring. */
@@ -669,7 +671,7 @@
   margin-top: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(135deg, var(--ts-orange-dim), transparent);
   border: 1px solid var(--ts-orange-border);
   display: flex;
   align-items: center;
@@ -686,18 +688,18 @@
   border: 0;
   padding: 0;
   background: linear-gradient(135deg, var(--ts-orange), var(--ts-orange-light));
-  color: #fff;
+  color: var(--ts-white);
   font-size: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 2px 8px var(--ts-orange-glow);
   transition: transform 0.1s, box-shadow 0.15s;
 }
 .audio-play-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+  box-shadow: 0 4px 12px var(--ts-orange-glow-hover);
 }
 .audio-play-btn:active { transform: scale(0.95); }
 .audio-play-btn i { line-height: 1; }
@@ -722,7 +724,7 @@
 .audio-player-track {
   position: relative;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--ts-border);
   border-radius: 999px;
   cursor: pointer;
 }
@@ -745,7 +747,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--ts-white);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   transform: translate(-50%, -50%);
   opacity: 0;
@@ -988,7 +990,7 @@
   border-radius: 10px;
   border: none;
   background: linear-gradient(135deg, var(--ts-orange), var(--ts-orange-light));
-  color: #fff;
+  color: var(--ts-white);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;

@@ -45,7 +45,7 @@ import unittest
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from app import create_app
 from app.models import db, Beat, User
@@ -522,6 +522,151 @@ class TestAuthenticatedInteractions(_SeleniumBase):
         self.driver.execute_script("arguments[0].focus();", menu_btn)
         signout = wait.until(EC.visibility_of_element_located((By.ID, 'nav-signout')))
         self.assertTrue(signout.is_displayed(), 'Sign Out button must be visible after opening the profile menu')
+        self._logout()
+
+
+# ---------------------------------------------------------------------------
+# Test class 5 — Upload page structure and interactions
+# ---------------------------------------------------------------------------
+
+class TestUploadPage(_SeleniumBase):
+    """Verify the upload page renders correctly and key UI elements behave as expected.
+
+    Tests cover: auth guard, page load, dropzone presence, currency dropdown
+    options, initial player state, and player appearance after file selection.
+    Follows the lecture pattern (Week13-Testing slides 29-31): interact via
+    WebDriver, assert against the live DOM.
+    """
+
+    def test_upload_redirects_unauthenticated_user_to_login(self):
+        """Accessing /upload without being logged in must redirect to /login."""
+        self.driver.get(_HOST + '/upload')
+        WebDriverWait(self.driver, _WAIT).until(EC.url_contains('/login'))
+        self.assertIn(
+            '/login', self.driver.current_url,
+            '/upload must redirect unauthenticated visitors to /login',
+        )
+
+    def test_upload_page_loads_for_authenticated_user(self):
+        """After login the upload page must return a 200 with the expected title."""
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        WebDriverWait(self.driver, _WAIT).until(EC.title_contains('Upload'))
+        self.assertIn(
+            'Upload', self.driver.title,
+            f'Upload page title must contain "Upload"; got "{self.driver.title}"',
+        )
+        self._logout()
+
+    def test_upload_audio_dropzone_is_visible(self):
+        """The audio drag-and-drop zone must be displayed on the upload page."""
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        wait = WebDriverWait(self.driver, _WAIT)
+        zone = wait.until(EC.presence_of_element_located((By.ID, 'audio-drop')))
+        self.assertTrue(
+            zone.is_displayed(),
+            'Audio dropzone (#audio-drop) must be visible on the upload page',
+        )
+        self._logout()
+
+    def test_upload_currency_dropdown_has_all_four_options(self):
+        """Currency select must offer AUD, USD, EUR, and GBP as choices."""
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        wait = WebDriverWait(self.driver, _WAIT)
+        select_el = wait.until(EC.presence_of_element_located((By.ID, 'currency')))
+        sel = Select(select_el)
+        option_values = [o.get_attribute('value') for o in sel.options]
+        for code in ('AUD', 'USD', 'EUR', 'GBP'):
+            self.assertIn(
+                code, option_values,
+                f'Currency dropdown must include the {code} option',
+            )
+        self._logout()
+
+    def test_upload_currency_default_is_aud(self):
+        """The currency dropdown must default to AUD on a fresh upload page."""
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        wait = WebDriverWait(self.driver, _WAIT)
+        select_el = wait.until(EC.presence_of_element_located((By.ID, 'currency')))
+        sel = Select(select_el)
+        self.assertEqual(
+            sel.first_selected_option.get_attribute('value'),
+            'AUD',
+            'Currency dropdown must default to AUD',
+        )
+        self._logout()
+
+    def test_upload_audio_player_is_hidden_before_file_selection(self):
+        """The custom audio player must be hidden until a file is chosen."""
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        wait = WebDriverWait(self.driver, _WAIT)
+        wait.until(EC.presence_of_element_located((By.ID, 'audio-preview')))
+        player = self.driver.find_element(By.ID, 'audio-preview')
+        self.assertFalse(
+            player.is_displayed(),
+            'Audio preview (#audio-preview) must be hidden before a file is selected',
+        )
+        self._logout()
+
+    def test_upload_audio_player_appears_after_file_selection(self):
+        """Selecting an audio file must make the custom player visible.
+
+        Mirrors the lecture DB-to-browser verification pattern (slide 31):
+        trigger an action, then assert the resulting DOM state in the browser.
+        Uses send_keys on the file input to simulate file selection without
+        opening a native file picker.
+        """
+        self._login()
+        self.driver.get(_HOST + '/upload')
+        wait = WebDriverWait(self.driver, _WAIT)
+        wait.until(EC.presence_of_element_located((By.ID, 'audio-drop')))
+
+        # Minimal valid WAV (48 bytes): 1-channel 44100Hz 16-bit PCM, 2 silent samples.
+        # An empty file triggers onerror on the audio element, which immediately
+        # re-hides the preview — a real (but tiny) audio file avoids that.
+        _SILENT_WAV = (
+            b'RIFF\x28\x00\x00\x00WAVE'
+            b'fmt \x10\x00\x00\x00\x01\x00\x01\x00'
+            b'\x44\xac\x00\x00\x88\x58\x01\x00\x02\x00\x10\x00'
+            b'data\x04\x00\x00\x00\x00\x00\x00\x00'
+        )
+        fd, tmp_path = tempfile.mkstemp(suffix='.wav')
+        try:
+            os.write(fd, _SILENT_WAV)
+            os.close(fd)
+            file_input = self.driver.find_element(By.ID, 'audio_file')
+            self.driver.execute_script(
+                "arguments[0].style.opacity = '1'; arguments[0].style.pointerEvents = 'auto';",
+                file_input,
+            )
+            file_input.send_keys(tmp_path)
+
+            # Audio preview player must appear (PR #70 custom player)
+            wait.until(EC.visibility_of_element_located((By.ID, 'audio-preview')))
+            self.assertTrue(
+                self.driver.find_element(By.ID, 'audio-preview').is_displayed(),
+                'Audio preview must become visible after a file is selected',
+            )
+
+            # Dropzone filename label must show the selected file (PR #69 dropzone)
+            drop_name = self.driver.find_element(By.ID, 'audio-drop-name')
+            self.assertFalse(
+                drop_name.get_attribute('hidden'),
+                'Filename label (#audio-drop-name) must become visible after file selection',
+            )
+            self.assertTrue(
+                drop_name.text.endswith('.wav'),
+                'Filename label must display the selected filename',
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
         self._logout()
 
 

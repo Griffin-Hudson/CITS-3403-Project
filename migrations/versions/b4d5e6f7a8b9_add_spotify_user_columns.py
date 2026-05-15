@@ -16,12 +16,26 @@ depends_on = None
 
 
 def upgrade():
+    from sqlalchemy import inspect, text
+    conn = op.get_bind()
+    existing = {c['name'] for c in inspect(conn).get_columns('user')}
+
+    # DBs created from db.create_all() after the model was updated already have
+    # these columns and the unique index — skip the whole migration in that case.
+    if 'spotify_id' in existing:
+        return
+
     with op.batch_alter_table('user') as batch_op:
         batch_op.add_column(sa.Column('spotify_id',           sa.String(length=128), nullable=True))
         batch_op.add_column(sa.Column('spotify_display_name', sa.String(length=256), nullable=True))
         batch_op.add_column(sa.Column('spotify_url',          sa.String(length=256), nullable=True))
         batch_op.add_column(sa.Column('spotify_artist_url',   sa.String(length=256), nullable=True))
-        batch_op.create_unique_constraint('uq_user_spotify_id', ['spotify_id'])
+
+    # Create unique index directly — avoids a table rebuild and the FK constraint
+    # error that batch_alter_table triggers when recreating the user table.
+    conn.execute(text(
+        'CREATE UNIQUE INDEX IF NOT EXISTS uq_user_spotify_id ON "user" (spotify_id)'
+    ))
 
 
 def downgrade():
