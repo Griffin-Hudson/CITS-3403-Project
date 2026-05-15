@@ -40,6 +40,9 @@ MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
 
 VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
+# cap search results so a broad query doesnt drag the whole table back
+SEARCH_RESULT_LIMIT = 50
+
 
 def _safe_redirect_target(target, request_host=''):
     """Allow only same-site redirect targets or root-relative paths."""
@@ -176,7 +179,7 @@ def index():
 
 
 @main.route('/login', methods=['GET', 'POST'])
-@limiter.limit('20 per minute')
+@limiter.limit('5 per 15 minutes')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -688,7 +691,7 @@ def search():
                 )
             if genre_filter:
                 bq = bq.filter(Beat.genre.ilike(genre_pat, escape='\\'))
-            beats = bq.order_by(Beat.uploaded_at.desc()).limit(50).all()
+            beats = bq.order_by(Beat.uploaded_at.desc()).limit(SEARCH_RESULT_LIMIT).all()
 
         if search_type in ('all', 'producers') and query:
             # only let logged-in users search bios, otherwise random
@@ -696,7 +699,7 @@ def search():
             producer_filter = User.username.ilike(q_pat, escape='\\')
             if current_user.is_authenticated:
                 producer_filter = producer_filter | User.bio.ilike(q_pat, escape='\\')
-            producers = User.query.filter(producer_filter).limit(50).all()
+            producers = User.query.filter(producer_filter).limit(SEARCH_RESULT_LIMIT).all()
 
     # Batch-load follower counts so the template doesn't fire one query per producer
     follower_counts = {}
