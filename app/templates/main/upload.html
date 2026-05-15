@@ -160,11 +160,22 @@
               </div>
 
               <div class="upload-audio-preview" id="audio-preview" hidden>
-                <div class="upload-audio-preview-head">
-                  <i class="bi bi-soundwave"></i>
-                  <span>Audio preview</span>
+                <audio preload="metadata" id="audio-preview-player"></audio>
+                <button type="button" class="audio-play-btn" id="audio-play-btn" aria-label="Play">
+                  <i class="bi bi-play-fill"></i>
+                </button>
+                <div class="audio-player-meta">
+                  <div class="audio-player-name" id="audio-player-name">Audio preview</div>
+                  <div class="audio-player-track" id="audio-player-track">
+                    <div class="audio-player-fill" id="audio-player-fill"></div>
+                    <div class="audio-player-thumb" id="audio-player-thumb"></div>
+                  </div>
                 </div>
-                <audio controls preload="metadata" id="audio-preview-player"></audio>
+                <div class="audio-player-time">
+                  <span id="audio-player-current">0:00</span>
+                  <span class="audio-player-time-sep">/</span>
+                  <span id="audio-player-duration">0:00</span>
+                </div>
               </div>
             </div>
 
