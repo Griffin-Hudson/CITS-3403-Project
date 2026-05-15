@@ -27,6 +27,7 @@ import random
 
 from app import create_app
 from app.models import db, User, Beat, Like, Comment
+from app.services.wallet_service import top_up, record_earning
 
 random.seed(42)
 
@@ -402,6 +403,11 @@ def seed():
                     created_at=now - timedelta(hours=random.randint(0, 48)),
                 )
                 db.session.add(reply)
+
+        # ── Seed wallet activity so demo wallet/studio pages arent empty ──
+        top_up(demo, 50.0, note='Welcome credit')
+        for producer in producer_objs:
+            record_earning(producer, round(random.uniform(15, 80), 2), note='Sample sale')
 
         db.session.commit()
 

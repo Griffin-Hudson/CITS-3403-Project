@@ -1200,6 +1200,7 @@ async function loadComments(beatId) {
   list.innerHTML = '<div class="feed-drawer-loading"><i class="bi bi-arrow-repeat"></i> Loading…</div>';
   try {
     const r = await fetch(`/api/beats/${beatId}/comments?limit=30`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     renderComments(data.comments || [], list, beatId);
     // Sync the comment count badge with the actual loaded count
@@ -1771,6 +1772,7 @@ function initInfiniteScroll() {
       const seen = (cfg.seenIds || []).join(',');
       const url  = `/api/feed?page=${cfg.nextPage}&seen=${seen}`;
       const r    = await fetch(url);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
 
       (data.beats || []).forEach(beat => {
