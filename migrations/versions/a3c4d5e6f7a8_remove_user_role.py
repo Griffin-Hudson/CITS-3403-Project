@@ -21,5 +21,8 @@ def upgrade():
 
 
 def downgrade():
+    # add with server_default so existing rows can backfill, then drop the
+    # default so the column ends up matching the original schema
     with op.batch_alter_table('user') as batch_op:
         batch_op.add_column(sa.Column('role', sa.String(length=16), nullable=False, server_default='user'))
+        batch_op.alter_column('role', server_default=None)
