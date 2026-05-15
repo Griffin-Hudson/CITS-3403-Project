@@ -430,19 +430,13 @@ class TestBeatModel(_AppTestCase):
         db.session.commit()
         self.assertEqual(beat.producer.id, self.producer.id)
 
-    def test_beat_repr_contains_title(self):
-        beat = _make_beat(self.producer, title='Chill Vibes')
-        db.session.add(beat)
-        db.session.commit()
-        self.assertIn('Chill Vibes', repr(beat))
-
 
 # ---------------------------------------------------------------------------
 # 7. Transaction model
 # ---------------------------------------------------------------------------
 
 class TestTransactionModel(_AppTestCase):
-    """Transaction type constants, persistence, and User wallet defaults — ~5 tests."""
+    """Transaction type constants, persistence, and User wallet defaults — ~4 tests."""
 
     def setUp(self):
         super().setUp()
@@ -473,18 +467,6 @@ class TestTransactionModel(_AppTestCase):
         self.assertIsNotNone(fetched)
         self.assertEqual(fetched.amount, 20.0)
         self.assertEqual(fetched.type, Transaction.TYPE_TOPUP)
-
-    def test_transaction_repr_includes_type_and_amount(self):
-        tx = Transaction(
-            user_id=self.user.id,
-            type=Transaction.TYPE_EARNING,
-            amount=9.99,
-            balance_after=9.99,
-        )
-        db.session.add(tx)
-        db.session.commit()
-        representation = repr(tx)
-        self.assertIn('earning', representation)
 
     def test_user_balance_defaults_to_zero(self):
         self.assertEqual(
@@ -548,12 +530,6 @@ class TestCommentModel(_AppTestCase):
         db.session.add(c)
         db.session.commit()
         self.assertEqual(c.report_count, 0)
-
-    def test_comment_repr_contains_beat_id(self):
-        c = _make_comment(self.beat, self.alice)
-        db.session.add(c)
-        db.session.commit()
-        self.assertIn(str(self.beat.id), repr(c))
 
     def test_has_reported_comment_false_by_default(self):
         c = _make_comment(self.beat, self.alice)

@@ -7,7 +7,7 @@ import random
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, jsonify, request, session, url_for
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -343,7 +343,10 @@ def post_comment(beat_id):
                       parent_id=parent.id if parent else None)
     db.session.add(comment)
     db.session.commit()
-    return jsonify(_serialize_comment(comment, set(), set(), set())), 201
+    resp = jsonify(_serialize_comment(comment, set(), set(), set()))
+    resp.status_code = 201
+    resp.headers['Location'] = url_for('api.get_comments', beat_id=beat_id)
+    return resp
 
 
 @api.route('/comments/<int:comment_id>/like', methods=['POST'])
