@@ -190,7 +190,7 @@
   border-radius: var(--radius-xl);
   color: var(--ts-text-secondary);
 }
-.myfeeds-empty i {
+.myfeeds-empty > i {
   font-size: 42px;
   color: var(--ts-orange);
   margin-bottom: 14px;
