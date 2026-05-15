@@ -66,7 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
       uploadLabel.classList.remove('drag-over');
       const files = e.dataTransfer.files;
       if (files.length > 0) {
-        picInput.files = files;
+        // FileList is read-only; DataTransfer is the only way to assign dropped files
+        try {
+          const dt = new DataTransfer();
+          Array.from(files).forEach(f => dt.items.add(f));
+          picInput.files = dt.files;
+        } catch (_) {
+          // DataTransfer not supported — fire change anyway so preview still loads
+        }
         picInput.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });

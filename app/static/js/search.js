@@ -8,6 +8,12 @@ if (form && resultsBox) {
     history.pushState({}, '', `?${params}`);
     await runSearch(params);
   });
+
+  // Auto-run if the page was loaded with a pre-filled query (e.g. shared link)
+  const initial = new URLSearchParams(window.location.search);
+  if (initial.get('q') || initial.get('genre')) {
+    runSearch(initial);
+  }
 }
 
 function escHtml(s) {
