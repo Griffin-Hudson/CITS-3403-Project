@@ -11,7 +11,11 @@ Run with:
 import unittest
 
 from app import create_app
-from app.models import db, User, Beat, Comment, Like, Transaction
+from app.models import db, User, Beat, Comment, Like, Transaction, CommentReport
+from app.routes import _safe_redirect_target
+from app.forms import _safe_url
+from app.services.wallet_service import top_up, record_purchase, record_earning
+from wtforms.validators import ValidationError
 
 
 # ---------------------------------------------------------------------------
@@ -394,6 +398,15 @@ class TestBeatModel(_AppTestCase):
         db.session.commit()
         self.assertEqual(beat.play_count, 0)
 
+    def test_user_without_beats_is_not_marked_as_uploader(self):
+        self.assertFalse(self.producer.has_uploaded_beats)
+
+    def test_user_with_beats_is_marked_as_uploader(self):
+        beat = _make_beat(self.producer)
+        db.session.add(beat)
+        db.session.commit()
+        self.assertTrue(self.producer.has_uploaded_beats)
+
     def test_comment_count_excludes_replies(self):
         """comment_count must count only top-level comments, not nested replies."""
         beat = _make_beat(self.producer)
@@ -541,6 +554,173 @@ class TestCommentModel(_AppTestCase):
         db.session.add(c)
         db.session.commit()
         self.assertIn(str(self.beat.id), repr(c))
+
+    def test_has_reported_comment_false_by_default(self):
+        c = _make_comment(self.beat, self.alice)
+        db.session.add(c)
+        db.session.commit()
+        self.assertFalse(self.alice.has_reported_comment(c))
+
+    def test_has_reported_comment_true_after_report(self):
+        c = _make_comment(self.beat, self.alice)
+        db.session.add(c)
+        db.session.commit()
+        report = CommentReport(comment_id=c.id, user_id=self.alice.id, reason='spam')
+        db.session.add(report)
+        db.session.commit()
+        self.assertTrue(self.alice.has_reported_comment(c))
+
+
+# ---------------------------------------------------------------------------
+# 9. Wallet service
+# ---------------------------------------------------------------------------
+
+class TestWalletService(_AppTestCase):
+    """top_up / record_purchase / record_earning — atomicity and ledger correctness."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = _make_user()
+        db.session.add(self.user)
+        db.session.commit()
+
+    def test_top_up_increases_balance(self):
+        top_up(self.user, 50.0)
+        db.session.commit()
+        self.assertAlmostEqual(self.user.balance, 50.0)
+
+    def test_top_up_creates_transaction_row(self):
+        top_up(self.user, 25.0, note='Test top-up')
+        db.session.commit()
+        tx = Transaction.query.filter_by(user_id=self.user.id, type=Transaction.TYPE_TOPUP).first()
+        self.assertIsNotNone(tx)
+        self.assertAlmostEqual(tx.amount, 25.0)
+        self.assertAlmostEqual(tx.balance_after, 25.0)
+        self.assertEqual(tx.note, 'Test top-up')
+
+    def test_record_purchase_decreases_balance(self):
+        top_up(self.user, 100.0)
+        db.session.commit()
+        record_purchase(self.user, 30.0)
+        db.session.commit()
+        self.assertAlmostEqual(self.user.balance, 70.0)
+
+    def test_record_purchase_creates_transaction_row(self):
+        top_up(self.user, 100.0)
+        db.session.commit()
+        record_purchase(self.user, 20.0, note='Beat buy')
+        db.session.commit()
+        tx = Transaction.query.filter_by(user_id=self.user.id, type=Transaction.TYPE_PURCHASE).first()
+        self.assertIsNotNone(tx)
+        self.assertAlmostEqual(tx.amount, 20.0)
+        self.assertEqual(tx.note, 'Beat buy')
+
+    def test_record_earning_increases_balance_and_earnings(self):
+        record_earning(self.user, 15.0)
+        db.session.commit()
+        self.assertAlmostEqual(self.user.balance, 15.0)
+        self.assertAlmostEqual(self.user.earnings, 15.0)
+
+    def test_record_earning_creates_transaction_row(self):
+        record_earning(self.user, 9.99)
+        db.session.commit()
+        tx = Transaction.query.filter_by(user_id=self.user.id, type=Transaction.TYPE_EARNING).first()
+        self.assertIsNotNone(tx)
+        self.assertAlmostEqual(tx.amount, 9.99)
+
+    def test_top_up_accumulates_across_calls(self):
+        top_up(self.user, 10.0)
+        top_up(self.user, 20.0)
+        db.session.commit()
+        self.assertAlmostEqual(self.user.balance, 30.0)
+
+
+# ---------------------------------------------------------------------------
+# 11. _safe_redirect_target (security helper — no DB needed)
+# ---------------------------------------------------------------------------
+
+class TestSafeRedirectTarget(unittest.TestCase):
+    """Pure-function tests; no app context required."""
+
+    def test_relative_path_allowed(self):
+        self.assertEqual(_safe_redirect_target('/feed'), '/feed')
+
+    def test_root_slash_allowed(self):
+        self.assertEqual(_safe_redirect_target('/'), '/')
+
+    def test_empty_string_allowed(self):
+        self.assertEqual(_safe_redirect_target(''), '')
+
+    def test_none_returns_empty(self):
+        self.assertEqual(_safe_redirect_target(None), '')
+
+    def test_absolute_http_rejected_without_host(self):
+        self.assertEqual(_safe_redirect_target('http://evil.com/steal'), '')
+
+    def test_absolute_https_rejected_without_host(self):
+        self.assertEqual(_safe_redirect_target('https://phishing.example/login'), '')
+
+    def test_same_host_absolute_url_allowed(self):
+        result = _safe_redirect_target('http://localhost:5002/feed', 'localhost:5002')
+        self.assertEqual(result, 'http://localhost:5002/feed')
+
+    def test_different_host_absolute_url_rejected(self):
+        self.assertEqual(_safe_redirect_target('http://evil.com/x', 'localhost:5002'), '')
+
+    def test_relative_path_without_leading_slash_rejected(self):
+        self.assertEqual(_safe_redirect_target('evil.com/x'), '')
+
+
+# ---------------------------------------------------------------------------
+# 12. _safe_url form validator (security helper — no DB needed)
+# ---------------------------------------------------------------------------
+
+class _MockField:
+    """Minimal WTForms field stub for validator testing."""
+    def __init__(self, data):
+        self.data = data
+
+
+class TestSafeUrlValidator(unittest.TestCase):
+    """_safe_url validator — no app context required."""
+
+    def _run(self, url):
+        _safe_url(None, _MockField(url))
+
+    def test_relative_path_accepted(self):
+        self._run('/static/audio/beat.mp3')
+
+    def test_http_url_accepted(self):
+        self._run('http://cdn.example.com/beat.mp3')
+
+    def test_https_url_accepted(self):
+        self._run('https://cdn.example.com/cover.jpg')
+
+    def test_empty_string_accepted(self):
+        self._run('')
+
+    def test_none_accepted(self):
+        self._run(None)
+
+    def test_javascript_scheme_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('javascript:alert(document.cookie)')
+
+    def test_data_scheme_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('data:text/html,<script>alert(1)</script>')
+
+    def test_vbscript_scheme_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('vbscript:msgbox(1)')
+
+    def test_bare_domain_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('evil.com/steal')
+
+    def test_protocol_relative_url_rejected(self):
+        with self.assertRaises(ValidationError):
+            self._run('//evil.com/steal')
 
 
 # ---------------------------------------------------------------------------

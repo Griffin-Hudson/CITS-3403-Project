@@ -10,22 +10,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.exc import IntegrityError
 from app import limiter
-from app.forms import (SignupForm, LoginForm, UploadBeatForm, EditProfileForm,
-                       TopUpForm, MIN_TOPUP, MAX_TOPUP)
+from app.forms import SignupForm, LoginForm, UploadBeatForm, EditProfileForm, TopUpForm, MIN_TOPUP, MAX_TOPUP
 from app.models import db, User, Beat, Like, Purchase, Transaction, saved_beats, follows
 from app.services.feed_service import get_feed_beats
 from app.services.wallet_service import (
-    top_up,
-    purchase_beat,
-    tier_price,
-    user_owns_tier,
-    beat_has_exclusive_owner,
-    TIER_LABELS,
-    TIER_LEASE,
-    TIER_PREMIUM,
-    TIER_EXCLUSIVE,
-    METHOD_BALANCE,
-    METHOD_CARD,
+    top_up, purchase_beat, tier_price, user_owns_tier, beat_has_exclusive_owner,
+    TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE, TIER_LABELS, METHOD_BALANCE, METHOD_CARD,
 )
 
 main = Blueprint('main', __name__)
@@ -37,15 +27,16 @@ AVATAR_BG_COLOR = '1a1f3a'  # Deep indigo — sophisticated, matches website aes
 
 ALLOWED_UPLOAD_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_UPLOAD_SIZE_MB = 5
-MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024  # 5 MB
+MAX_UPLOAD_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
-# beat upload limits
 ALLOWED_BEAT_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
 ALLOWED_BEAT_COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 MAX_BEAT_AUDIO_SIZE_MB = 50
-MAX_BEAT_AUDIO_SIZE = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
+MAX_BEAT_AUDIO_SIZE    = MAX_BEAT_AUDIO_SIZE_MB * 1024 * 1024
 MAX_BEAT_COVER_SIZE_MB = 5
-MAX_BEAT_COVER_SIZE = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
+MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
+
+VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
 
 def _safe_redirect_target(target, request_host=''):
@@ -81,6 +72,35 @@ def _allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
 
 
+def _upload_dir(subdir):
+    root = current_app.config.get('UPLOAD_ROOT')
+    if root:
+        return os.path.join(root, subdir)
+    return os.path.join(current_app.root_path, 'static', 'uploads', subdir)
+
+
+def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
+    """Save a beat audio or cover file to static/uploads/<subdir>/; return relative path or None."""
+    if not file or not file.filename:
+        return None
+    name = secure_filename(file.filename)
+    if '.' not in name:
+        return None
+    ext = name.rsplit('.', 1)[1].lower()
+    if ext not in allowed_exts:
+        return None
+    file.seek(0, 2)
+    size = file.tell()
+    file.seek(0)
+    if size == 0 or size > max_size:
+        return None
+    upload_dir = _upload_dir(subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
+    file.save(os.path.join(upload_dir, filename))
+    return f'/static/uploads/{subdir}/{filename}'
+
+
 def _save_user_upload(file, user_id):
     """Save uploaded profile picture and return the relative path.
 
@@ -93,7 +113,7 @@ def _save_user_upload(file, user_id):
         return None
 
     # Ensure uploads directory exists
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+    upload_dir = _upload_dir('profiles')
     os.makedirs(upload_dir, exist_ok=True)
 
     # Generate unique filename with user_id and timestamp
@@ -112,29 +132,38 @@ def _save_user_upload(file, user_id):
     return f'/static/uploads/profiles/{filename}'
 
 
-def _save_beat_upload(file, subdir, user_id, allowed_exts, max_size):
-    """Save a beat audio or cover file under static/uploads/<subdir>/."""
-    if not file or not file.filename:
-        return None
-    name = secure_filename(file.filename)
-    if '.' not in name:
-        return None
-    ext = name.rsplit('.', 1)[1].lower()
-    if ext not in allowed_exts:
-        return None
-
-    # size check using stream tell/seek
-    file.seek(0, 2)
-    size = file.tell()
-    file.seek(0)
-    if size == 0 or size > max_size:
-        return None
-
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', subdir)
-    os.makedirs(upload_dir, exist_ok=True)
-    filename = f'user_{user_id}_{token_hex(8)}.{ext}'
-    file.save(os.path.join(upload_dir, filename))
-    return f'/static/uploads/{subdir}/{filename}'
+def _beat_tier_options(beat):
+    owned_tiers = set()
+    if current_user.is_authenticated:
+        owned_tiers = {
+            row[0] for row in
+            db.session.query(Purchase.licence_type)
+            .filter(Purchase.buyer_id == current_user.id,
+                    Purchase.beat_id == beat.id)
+            .all()
+        }
+    exclusive_sold = beat_has_exclusive_owner(beat)
+    is_own_beat = current_user.is_authenticated and beat.producer_id == current_user.id
+    options = []
+    for tier in VALID_TIERS:
+        price = tier_price(beat, tier)
+        if price is None:
+            continue
+        disabled_reason = ''
+        if is_own_beat:
+            disabled_reason = 'Your beat'
+        elif tier in owned_tiers:
+            disabled_reason = 'Owned'
+        elif tier == TIER_EXCLUSIVE and exclusive_sold:
+            disabled_reason = 'Sold'
+        options.append({
+            'tier': tier,
+            'label': TIER_LABELS[tier],
+            'price': price,
+            'disabled_reason': disabled_reason,
+            'checkout_url': '' if disabled_reason else url_for('main.checkout', beat_id=beat.id, tier=tier),
+        })
+    return options
 
 
 @main.route('/')
@@ -143,7 +172,7 @@ def index():
 
 
 @main.route('/login', methods=['GET', 'POST'])
-@limiter.limit('20 per minute')
+@limiter.limit('5 per 15 minutes')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -161,7 +190,7 @@ def login():
 
 
 @main.route('/register', methods=['GET', 'POST'])
-@limiter.limit('10 per hour')
+@limiter.limit('5 per 15 minutes')
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -322,16 +351,13 @@ def feed():
 def upload():
     form = UploadBeatForm()
     if form.validate_on_submit():
-        # step 1: save audio file (required)
         audio_path = _save_beat_upload(
             form.audio_file.data, 'beats', current_user.id,
             ALLOWED_BEAT_AUDIO_EXTENSIONS, MAX_BEAT_AUDIO_SIZE,
         )
         if not audio_path:
-            flash(f'Audio file is missing or larger than {MAX_BEAT_AUDIO_SIZE_MB}MB.', 'danger')
+            flash(f'Audio file is missing or larger than {MAX_BEAT_AUDIO_SIZE_MB} MB.', 'danger')
             return render_template('main/upload.html', form=form)
-
-        # step 2: save cover if one was provided
         cover_path = None
         if form.cover_file.data and form.cover_file.data.filename:
             cover_path = _save_beat_upload(
@@ -339,7 +365,7 @@ def upload():
                 ALLOWED_BEAT_COVER_EXTENSIONS, MAX_BEAT_COVER_SIZE,
             )
             if not cover_path:
-                flash(f'Cover image must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB}MB.', 'danger')
+                flash(f'Cover must be PNG/JPG/WebP and under {MAX_BEAT_COVER_SIZE_MB} MB.', 'danger')
                 return render_template('main/upload.html', form=form)
 
         beat = Beat(
@@ -357,10 +383,6 @@ def upload():
             producer_id=current_user.id,
         )
         db.session.add(beat)
-        # Promote the user to 'producer' the first time they upload, so the
-        # role accurately reflects their activity on the platform.
-        if current_user.role != 'producer':
-            current_user.role = 'producer'
         db.session.commit()
         flash('Beat uploaded successfully!', 'success')
         return redirect(url_for('main.feed'))
@@ -459,7 +481,8 @@ def beat_detail(beat_id):
     return render_template('main/beat_detail.html',
                            beat=beat,
                            is_liked=is_liked,
-                           is_following=is_following)
+                           is_following=is_following,
+                           tier_options=_beat_tier_options(beat))
 
 
 @main.route('/follow/<int:user_id>', methods=['POST'])
@@ -533,9 +556,6 @@ def wallet_topup():
     return render_template('main/wallet_topup.html',
                            amount=amount,
                            balance=current_user.balance or 0.0)
-
-
-VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
 
 @main.route('/checkout/<int:beat_id>', methods=['GET', 'POST'])
@@ -620,7 +640,7 @@ def my_feeds():
 @main.route('/studio/earnings')
 @login_required
 def studio_earnings():
-    if current_user.role != 'producer':
+    if not current_user.has_uploaded_beats:
         flash('Upload your first beat to unlock the creator studio.', 'info')
         return redirect(url_for('main.upload'))
 

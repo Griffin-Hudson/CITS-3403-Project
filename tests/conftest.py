@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 from app import create_app
 from app.models import db as _db, User, Beat
@@ -14,11 +16,18 @@ class TestConfig:
 
 @pytest.fixture(scope='session')
 def app():
-    app = create_app(TestConfig)
-    with app.app_context():
-        _db.create_all()
-        yield app
-        _db.drop_all()
+    with tempfile.TemporaryDirectory() as upload_root:
+        app = create_app(TestConfig)
+        app.config['UPLOAD_ROOT'] = upload_root
+
+        @app.route('/__test__/raise-500')
+        def _raise_500():
+            raise RuntimeError('Intentional test error')
+
+        with app.app_context():
+            _db.create_all()
+            yield app
+            _db.drop_all()
 
 
 @pytest.fixture(scope='function')
@@ -27,9 +36,9 @@ def client(app):
         yield c
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='function')
 def seeded_db(app):
-    """Insert one user and one beat once for the whole test session."""
+    """Insert one user and one beat; tears down after each test to prevent state bleed."""
     with app.app_context():
         user = User(username='testuser', email='test@example.com')
         user.set_password('testpass')
@@ -45,6 +54,10 @@ def seeded_db(app):
         _db.session.add(beat)
         _db.session.commit()
         yield {'user_id': user.id, 'beat_id': beat.id}
+
+        _db.session.remove()
+        _db.drop_all()
+        _db.create_all()
 
 
 def login(client, email='test@example.com', password='testpass'):

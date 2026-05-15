@@ -42,7 +42,6 @@ class User(UserMixin, db.Model):
     username      = db.Column(db.String(64),  unique=True, nullable=False)
     email         = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role          = db.Column(db.String(16),  nullable=False, default='user')
     bio           = db.Column(db.Text,        nullable=True)
     avatar_url    = db.Column(db.String(256), nullable=True)
     created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
@@ -78,6 +77,11 @@ class User(UserMixin, db.Model):
         backref=db.backref('followers', lazy='dynamic'),
         lazy='dynamic',
     )
+
+    @property
+    def has_uploaded_beats(self):
+        """Return True once the user has at least one beat on the platform."""
+        return self.beats.first() is not None
 
     # ---- auth ----
     def set_password(self, password):

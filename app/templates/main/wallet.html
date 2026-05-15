@@ -21,7 +21,7 @@
       <div class="wallet-card wallet-balance-card">
         <div class="wallet-card-label">Available Balance</div>
         <div class="wallet-balance-amount">${{ '%.2f' % (current_user.balance or 0) }}</div>
-        {% if current_user.role == 'producer' %}
+        {% if current_user.has_uploaded_beats %}
           <a class="wallet-card-link" href="{{ url_for('main.studio_earnings') }}">
             <i class="bi bi-bar-chart-line"></i> View creator earnings
           </a>

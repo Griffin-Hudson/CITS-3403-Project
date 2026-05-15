@@ -1,14 +1,13 @@
 """WTForms definitions for auth, profile, search, and beat upload flows."""
 
 import re
+from urllib.parse import urlparse
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed, FileField, FileRequired
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import BooleanField, FloatField, IntegerField, StringField, PasswordField, SubmitField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 
-
-# allowed extensions for beat upload (kept here so the validator can use them)
 AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg'}
 COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
@@ -16,6 +15,22 @@ COVER_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 # Mainstream password rules: 8–128 chars, mixed case, digit, special char.
 PASSWORD_SPECIAL_CHARS = r"!@#$%^&*()\-_=+\[\]{};:'\",.<>/?\\|`~"
 _PASSWORD_SPECIAL_RE = re.compile(f'[{PASSWORD_SPECIAL_CHARS}]')
+
+
+def _safe_url(form, field):
+    """Allow local paths and http(s) URLs; reject script-like or bare-domain inputs."""
+    value = (field.data or '').strip()
+    if not value:
+        return
+
+    parsed = urlparse(value)
+    if value.startswith('/') and not value.startswith('//') and not parsed.scheme and not parsed.netloc:
+        return
+
+    if parsed.scheme in {'http', 'https'} and parsed.netloc:
+        return
+
+    raise ValidationError('Enter a safe URL or local path.')
 
 
 class SignupForm(FlaskForm):
@@ -74,14 +89,14 @@ class UploadBeatForm(FlaskForm):
     premium_price   = FloatField('Premium License Price', validators=[Optional(), NumberRange(min=0)])
     exclusive_price = FloatField('Exclusive Rights Price', validators=[Optional(), NumberRange(min=0)])
     audio_file = FileField('Audio File', validators=[
-        FileRequired(message='Pick an audio file to upload.'),
-        FileAllowed(AUDIO_EXTENSIONS, message='Audio must be MP3, WAV, M4A, or OGG.'),
+        DataRequired(message='An audio file is required.'),
+        FileAllowed(AUDIO_EXTENSIONS, 'MP3, WAV, M4A, or OGG only.'),
     ])
     cover_file = FileField('Cover Image', validators=[
         Optional(),
-        FileAllowed(COVER_EXTENSIONS, message='Cover must be PNG, JPG, or WebP.'),
+        FileAllowed(COVER_EXTENSIONS, 'PNG, JPG, or WebP only.'),
     ])
-    submit    = SubmitField('Upload Beat')
+    submit = SubmitField('Upload Beat')
 
 
 class EditProfileForm(FlaskForm):

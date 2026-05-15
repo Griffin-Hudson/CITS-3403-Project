@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_login import LoginManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -8,7 +8,7 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from app.config import Config
+from app.config import Config, validate_secret_key
 
 # Defined at module level so other modules can import them without triggering circular imports
 login_manager = LoginManager()
@@ -28,6 +28,7 @@ def _enforce_sqlite_fk(dbapi_connection, connection_record):
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    validate_secret_key(app)
 
     if not app.debug:
         logging.basicConfig(
@@ -70,6 +71,16 @@ def create_app(config_class=Config):
 
     from app.api.routes import api
     app.register_blueprint(api, url_prefix='/api')  # all API routes live under /api/
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'DENY')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+        if request.is_secure:
+            response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+        return response
 
     @app.errorhandler(404)
     def not_found(e):

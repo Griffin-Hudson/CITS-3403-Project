@@ -53,6 +53,13 @@
       <nav class="top-nav-links d-flex align-items-center gap-3">
         <a id="nav-listen" href="{{ url_for('main.feed') }}" {% if request.endpoint == 'main.feed' %}class="active"{% endif %}>Listen</a>
         <a id="nav-discover" href="{{ url_for('main.discover') }}" {% if request.endpoint == 'main.discover' %}class="active"{% endif %}>Discover</a>
+        <a id="nav-search"
+           class="top-nav-search-btn {% if request.endpoint == 'main.search' %}active{% endif %}"
+           href="{{ url_for('main.search') }}"
+           aria-label="Search TuneFeed"
+           title="Search">
+          <i class="bi bi-search"></i>
+        </a>
       </nav>
     </div>
 
@@ -78,7 +85,7 @@
                 <span class="nav-balance-row-value">${{ '%.2f' % (current_user.balance or 0) }}</span>
               </a>
             </li>
-            {% if current_user.role == 'producer' %}
+            {% if current_user.has_uploaded_beats %}
               <li>
                 <a class="dropdown-item nav-balance-row" href="{{ url_for('main.studio_earnings') }}">
                   <span class="nav-balance-row-label">
@@ -98,7 +105,7 @@
         </div>
 
         <div class="dropdown nav-profile-dropdown">
-          <button class="nav-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <button id="nav-profile-menu-button" class="nav-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="nav-profile-avatar">
               {% if current_user.avatar_url %}
                 <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" />

@@ -147,9 +147,6 @@ function loadAudioForBeat(beatId) {
   if (!audio || !meta || !meta.audio_url) return false;
 
   if (FeedState.audioBeatId !== beatId) {
-    // crossOrigin must be set BEFORE src so the browser sends the CORS request
-    // header, enabling Web Audio API analysis via createMediaElementSource.
-    audio.crossOrigin = 'anonymous';
     audio.src = meta.audio_url;
     audio.loop = true;   // infinite playback — track restarts automatically on end
     audio.load();
@@ -181,9 +178,7 @@ function playBeatAudio(beatId) {
   audio.play().then(() => {
     FeedState.userPaused = false;
     FeedState.audioActuallyPlaying = true;
-    // Wire up the Web Audio analyser now that we have a confirmed user gesture
-    // and playback is running — avoids SecurityError from CORS-tainted elements
-    // and ensures AudioContext is resumed after the gesture unlocks it.
+    // Wire up the Web Audio analyser once playback is running after a user gesture.
     const viz = ensureAudioVisualizer();
     if (viz && viz.context && viz.context.state === 'suspended') {
       viz.context.resume();

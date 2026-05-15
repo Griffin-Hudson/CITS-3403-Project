@@ -9,6 +9,12 @@ def _require_secret_key():
     if os.environ.get('FLASK_DEBUG', 'false').lower() == 'true':
         # Ephemeral key for local dev — sessions reset on every restart, which is fine
         return _secrets.token_hex(32)
+    return None
+
+
+def validate_secret_key(app):
+    if app.config.get('SECRET_KEY') or app.config.get('TESTING'):
+        return
     raise ValueError(
         'SECRET_KEY environment variable must be set in production. '
         'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
@@ -24,8 +30,7 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
 
-    # cap total request size so a huge beat upload can't exhaust memory.
-    # leaves headroom for the 50 MB audio + 5 MB cover + form overhead.
+    # leaves headroom for 50 MB audio + 5 MB cover + form overhead
     MAX_CONTENT_LENGTH = 60 * 1024 * 1024
 
     SESSION_COOKIE_HTTPONLY = True
