@@ -220,6 +220,7 @@ class Beat(db.Model):
     price           = db.Column(db.Float, nullable=False, default=0.0)
     premium_price   = db.Column(db.Float, nullable=True)
     exclusive_price = db.Column(db.Float, nullable=True)
+    currency        = db.Column(db.String(3), nullable=False, default='USD')
     play_count   = db.Column(db.Integer,     nullable=False, default=0,  index=True)
     is_trending  = db.Column(db.Boolean,     default=False)
     uploaded_at  = db.Column(db.DateTime,    default=datetime.utcnow,   index=True)

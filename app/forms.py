@@ -88,6 +88,11 @@ class UploadBeatForm(FlaskForm):
     price           = FloatField('Basic Lease Price',     validators=[DataRequired(), NumberRange(min=0)])
     premium_price   = FloatField('Premium License Price', validators=[Optional(), NumberRange(min=0)])
     exclusive_price = FloatField('Exclusive Rights Price', validators=[Optional(), NumberRange(min=0)])
+    # one currency applies to all three tiers
+    currency = SelectField('Currency',
+        choices=[('AUD', 'AUD'), ('USD', 'USD'), ('EUR', 'EUR'), ('GBP', 'GBP')],
+        default='AUD',
+    )
     audio_file = FileField('Audio File', validators=[
         DataRequired(message='An audio file is required.'),
         FileAllowed(AUDIO_EXTENSIONS, 'MP3, WAV, M4A, or OGG only.'),
