@@ -279,10 +279,12 @@ def get_comments(beat_id):
     scored = sorted(raw, key=comment_score, reverse=True)[:limit]
 
     # Batch-load all replies in one query, then group by parent
+    # Cap at 3× the top-level limit to prevent unbounded loads on busy beats
     scored_ids = [c.id for c in scored]
     all_replies = (Comment.query
                    .filter(Comment.parent_id.in_(scored_ids))
                    .order_by(Comment.created_at.asc())
+                   .limit(limit * 3)
                    .all()) if scored_ids else []
     replies_map = {}
     for r in all_replies:

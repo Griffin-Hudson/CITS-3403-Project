@@ -34,9 +34,11 @@
           {% if user.spotify_artist_url %}
             <a href="{{ user.spotify_artist_url }}" target="_blank" rel="noopener noreferrer"
                class="spotify-badge-label" aria-label="View {{ user.username }} on Spotify">Spotify Verified</a>
-          {% else %}
+          {% elif user.spotify_url %}
             <a href="{{ user.spotify_url }}" target="_blank" rel="noopener noreferrer"
                class="spotify-badge-label" aria-label="View {{ user.username }} on Spotify">Spotify Verified</a>
+          {% else %}
+            <span class="spotify-badge-label">Spotify Verified</span>
           {% endif %}
         </div>
       {% endif %}
@@ -240,7 +242,7 @@
               {% endif %}
               <div class="profile-beat-title" title="{{ beat.title }}">{{ beat.title }}</div>
               <div class="profile-beat-meta">
-                <span><i class="bi bi-person-fill"></i> @{{ beat.producer.username }}</span>
+                <span><i class="bi bi-person-fill"></i> @{{ beat.producer.username if beat.producer else 'Unknown' }}</span>
                 <span><i class="bi bi-play-fill"></i> {{ beat.play_count | format_num }}</span>
                 {% if beat.price == 0 %}
                   <span style="color:var(--ts-teal);font-weight:700;">FREE</span>

@@ -35,7 +35,7 @@
          data-beat='{{ {
            "id": beat.id,
            "title": beat.title,
-           "producer": beat.producer.username,
+           "producer": beat.producer.username if beat.producer else "",
            "producer_id": beat.producer_id,
            "audio_url": beat.audio_url,
            "bpm": beat.bpm,
@@ -102,16 +102,16 @@
 
         {# Producer avatar + follow #}
         <div class="feed-rail-avatar-wrap">
-          <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}" class="feed-rail-avatar" title="{{ beat.producer.username }}">
-            {% if beat.producer.avatar_url %}
+          <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}" class="feed-rail-avatar" title="{{ beat.producer.username if beat.producer else '' }}">
+            {% if beat.producer and beat.producer.avatar_url %}
               <img src="{{ beat.producer.avatar_url }}" alt="{{ beat.producer.username }}" />
             {% else %}
-              {{ beat.producer.username[0].upper() }}
+              {{ (beat.producer.username[0] if beat.producer else '?').upper() }}
             {% endif %}
           </a>
           <button class="feed-follow-btn {% if is_following_map.get(beat.producer_id) %}is-following{% endif %}"
                   data-producer-id="{{ beat.producer_id }}"
-                  aria-label="Follow {{ beat.producer.username }}">
+                  aria-label="Follow {{ beat.producer.username if beat.producer else 'producer' }}">
             <i class="bi {% if is_following_map.get(beat.producer_id) %}bi-check-lg{% else %}bi-plus-lg{% endif %}"></i>
           </button>
         </div>
@@ -155,7 +155,7 @@
       {# ── BOTTOM-LEFT INFO ── #}
       <div class="feed-info">
         <a href="{{ url_for('main.profile', user_id=beat.producer_id) }}" class="feed-producer-handle">
-          @{{ beat.producer.username }}
+          @{{ beat.producer.username if beat.producer else 'Unknown' }}
         </a>
         <h2 class="feed-beat-title">{{ beat.title }}</h2>
         <div class="feed-tags">
