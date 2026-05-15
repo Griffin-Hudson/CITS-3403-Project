@@ -43,7 +43,7 @@ VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
 
 def _safe_redirect_target(target, request_host=''):
     """Allow only same-site redirect targets or root-relative paths."""
-    if not target:
+    if not target or '\\' in target:
         return ''
 
     split = urlsplit(target)
@@ -61,6 +61,11 @@ def _safe_redirect_target(target, request_host=''):
         return ''
 
     return target
+
+
+def _like_escape(s):
+    # escape % and _ so user input doesnt act as wildcards in ilike
+    return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 
 
 def _random_avataaars_avatar_url():
@@ -171,7 +176,7 @@ def index():
 
 
 @main.route('/login', methods=['GET', 'POST'])
-@limiter.limit('5 per 15 minutes')
+@limiter.limit('20 per minute')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -189,7 +194,7 @@ def login():
 
 
 @main.route('/register', methods=['GET', 'POST'])
-@limiter.limit('5 per 15 minutes')
+@limiter.limit('10 per hour')
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.feed'))
@@ -670,23 +675,28 @@ def search():
     genre_filter = request.args.get('genre', '').strip()
 
     if query or genre_filter:
+        q_pat = f'%{_like_escape(query)}%'
+        genre_pat = f'%{_like_escape(genre_filter)}%'
+
         if search_type in ('all', 'beats'):
             bq = Beat.query
             if query:
                 bq = bq.filter(
-                    Beat.title.ilike(f'%{query}%') |
-                    Beat.genre.ilike(f'%{query}%') |
-                    Beat.mood_tag.ilike(f'%{query}%')
+                    Beat.title.ilike(q_pat, escape='\\') |
+                    Beat.genre.ilike(q_pat, escape='\\') |
+                    Beat.mood_tag.ilike(q_pat, escape='\\')
                 )
             if genre_filter:
-                bq = bq.filter(Beat.genre.ilike(f'%{genre_filter}%'))
-            beats = bq.order_by(Beat.uploaded_at.desc()).all()
+                bq = bq.filter(Beat.genre.ilike(genre_pat, escape='\\'))
+            beats = bq.order_by(Beat.uploaded_at.desc()).limit(50).all()
 
         if search_type in ('all', 'producers') and query:
-            producers = User.query.filter(
-                User.username.ilike(f'%{query}%') |
-                User.bio.ilike(f'%{query}%')
-            ).all()
+            # only let logged-in users search bios, otherwise random
+            # visitors can probe everyones bio text
+            producer_filter = User.username.ilike(q_pat, escape='\\')
+            if current_user.is_authenticated:
+                producer_filter = producer_filter | User.bio.ilike(q_pat, escape='\\')
+            producers = User.query.filter(producer_filter).limit(50).all()
 
     # Batch-load follower counts so the template doesn't fire one query per producer
     follower_counts = {}
