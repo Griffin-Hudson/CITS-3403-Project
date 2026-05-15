@@ -16,6 +16,13 @@ depends_on = None
 
 
 def upgrade():
+    # Only drop if the column is present — DBs initialised after the role column
+    # was removed from the model won't have it, and the drop would fail.
+    from sqlalchemy import inspect
+    conn = op.get_bind()
+    cols = [c['name'] for c in inspect(conn).get_columns('user')]
+    if 'role' not in cols:
+        return
     with op.batch_alter_table('user') as batch_op:
         batch_op.drop_column('role')
 
