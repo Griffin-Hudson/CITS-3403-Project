@@ -1,7 +1,139 @@
-const form = document.getElementById('search-form');
-const resultsBox = document.getElementById('search-results');
+(function () {
+  'use strict';
 
-if (form && resultsBox) {
+  const form = document.getElementById('search-form');
+  const resultsBox = document.getElementById('search-results');
+
+  if (!form || !resultsBox) return;
+
+  const apiUrl = resultsBox.dataset.apiUrl || '/api/search';
+  const beatUrlTemplate = resultsBox.dataset.beatUrlTemplate || '/beats/0';
+  const profileUrlTemplate = resultsBox.dataset.profileUrlTemplate || '/profile/0';
+
+  function urlFromTemplate(template, id) {
+    return template.replace(/0(?=$|[/?#])/, String(id));
+  }
+
+  function clearResults() {
+    resultsBox.replaceChildren();
+  }
+
+  function icon(name) {
+    const i = document.createElement('i');
+    i.className = `bi ${name}`;
+    return i;
+  }
+
+  function resultCard(href, iconName, title, subtitle, meta) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.className = 'search-result-card';
+
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'search-result-icon';
+    iconWrap.appendChild(icon(iconName));
+
+    const main = document.createElement('span');
+    main.className = 'search-result-main';
+    const strong = document.createElement('strong');
+    strong.textContent = title;
+    const sub = document.createElement('span');
+    sub.textContent = subtitle;
+    main.append(strong, sub);
+
+    const metaEl = document.createElement('span');
+    metaEl.className = 'search-result-meta';
+    metaEl.textContent = meta;
+
+    a.append(iconWrap, main, metaEl);
+    return a;
+  }
+
+  function statusBlock(className, iconName, text) {
+    const box = document.createElement('div');
+    box.className = className;
+    box.appendChild(icon(iconName));
+    if (className === 'search-loading') {
+      box.appendChild(document.createTextNode(text));
+    } else {
+      const p = document.createElement('p');
+      p.textContent = text;
+      box.appendChild(p);
+    }
+    return box;
+  }
+
+  function section(title, cards) {
+    const sec = document.createElement('section');
+    sec.className = 'search-section';
+    const heading = document.createElement('h2');
+    heading.className = 'search-section-title';
+    heading.textContent = title;
+    const list = document.createElement('div');
+    list.className = 'search-result-list';
+    list.append(...cards);
+    sec.append(heading, list);
+    return sec;
+  }
+
+  function renderResults(data) {
+    const beats = data.beats || [];
+    const producers = data.producers || [];
+    const query = data.query || '';
+    const genre = data.genre_filter || '';
+
+    clearResults();
+
+    if (!query && !genre) return;
+
+    if (!beats.length && !producers.length) {
+      resultsBox.appendChild(statusBlock('search-empty', 'bi-search', 'No results found.'));
+      return;
+    }
+
+    if (beats.length) {
+      const cards = beats.map((b) => {
+        const details = [
+          b.genre || 'Unknown genre',
+          b.bpm ? `${b.bpm} BPM` : '',
+          b.key || '',
+        ].filter(Boolean).join(' | ');
+        return resultCard(
+          urlFromTemplate(beatUrlTemplate, b.id),
+          'bi-music-note-beamed',
+          b.title,
+          details,
+          `${b.likes_count} likes`,
+        );
+      });
+      resultsBox.appendChild(section('Beats', cards));
+    }
+
+    if (producers.length) {
+      const cards = producers.map((p) => resultCard(
+        urlFromTemplate(profileUrlTemplate, p.id),
+        'bi-person-circle',
+        p.username,
+        `${p.followers_count} followers`,
+        'Profile',
+      ));
+      resultsBox.appendChild(section('Creators', cards));
+    }
+  }
+
+  async function runSearch(params) {
+    clearResults();
+    resultsBox.appendChild(statusBlock('search-loading', 'bi-arrow-repeat', 'Searching...'));
+    try {
+      const r = await fetch(`${apiUrl}?${params}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      renderResults(await r.json());
+    } catch (_) {
+      clearResults();
+      resultsBox.appendChild(statusBlock('search-error', 'bi-exclamation-triangle', 'Search failed. Please try again.'));
+    }
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const params = new URLSearchParams(new FormData(form));
@@ -9,96 +141,8 @@ if (form && resultsBox) {
     await runSearch(params);
   });
 
-  // Auto-run if the page was loaded with a pre-filled query (e.g. shared link)
   const initial = new URLSearchParams(window.location.search);
   if (initial.get('q') || initial.get('genre')) {
     runSearch(initial);
   }
-}
-
-function escHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-async function runSearch(params) {
-  resultsBox.innerHTML = `
-    <div class="search-loading">
-      <i class="bi bi-arrow-repeat"></i>
-      Searching...
-    </div>`;
-  try {
-    const r = await fetch(`/api/search?${params}`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    renderResults(data);
-  } catch (_) {
-    resultsBox.innerHTML = `
-      <div class="search-error">
-        <i class="bi bi-exclamation-triangle"></i>
-        <p>Search failed. Please try again.</p>
-      </div>`;
-  }
-}
-
-function renderResults(data) {
-  const beats = data.beats || [];
-  const producers = data.producers || [];
-  const query = data.query || '';
-  const genre = data.genre_filter || '';
-
-  if ((query || genre) && !beats.length && !producers.length) {
-    resultsBox.innerHTML = `
-      <div class="search-empty">
-        <i class="bi bi-search"></i>
-        <p>No results found.</p>
-      </div>`;
-    return;
-  }
-
-  if (!query && !genre) {
-    resultsBox.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-
-  if (beats.length) {
-    html += '<section class="search-section"><h2 class="search-section-title">Beats</h2><div class="search-result-list">';
-    beats.forEach((b) => {
-      html += `
-        <a href="/beats/${b.id}" class="search-result-card">
-          <span class="search-result-icon"><i class="bi bi-music-note-beamed"></i></span>
-          <span class="search-result-main">
-            <strong>${escHtml(b.title)}</strong>
-            <span>
-              ${escHtml(b.genre || 'Unknown genre')}
-              ${b.bpm ? ` | ${b.bpm} BPM` : ''}
-              ${b.key ? ` | ${escHtml(b.key)}` : ''}
-            </span>
-          </span>
-          <span class="search-result-meta">${b.likes_count} likes</span>
-        </a>`;
-    });
-    html += '</div></section>';
-  }
-
-  if (producers.length) {
-    html += '<section class="search-section"><h2 class="search-section-title">Creators</h2><div class="search-result-list">';
-    producers.forEach((p) => {
-      html += `
-        <a href="/profile/${p.id}" class="search-result-card">
-          <span class="search-result-icon"><i class="bi bi-person-circle"></i></span>
-          <span class="search-result-main">
-            <strong>${escHtml(p.username)}</strong>
-            <span>${p.followers_count} followers</span>
-          </span>
-          <span class="search-result-meta">Profile</span>
-        </a>`;
-    });
-    html += '</div></section>';
-  }
-
-  resultsBox.innerHTML = html;
-}
+}());

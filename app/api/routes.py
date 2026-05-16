@@ -26,6 +26,10 @@ PLAY_DEDUPE_SECONDS = 8
 MAX_COMMENT_LENGTH  = 500
 
 
+def _like_escape(value):
+    return value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+
+
 # ---------------------------------------------------------------------------
 # Feed endpoint (AJAX infinite scroll)
 # ---------------------------------------------------------------------------
@@ -442,6 +446,8 @@ def search():
     query        = request.args.get('q', '').strip()[:128]
     search_type  = request.args.get('type', 'all')
     genre_filter = request.args.get('genre', '').strip()[:64]
+    q_pat        = f'%{_like_escape(query)}%'
+    genre_pat    = f'%{_like_escape(genre_filter)}%'
 
     beats_out = []
     producers_out = []
@@ -451,12 +457,12 @@ def search():
             bq = Beat.query
             if query:
                 bq = bq.filter(
-                    Beat.title.ilike(f'%{query}%') |
-                    Beat.genre.ilike(f'%{query}%') |
-                    Beat.mood_tag.ilike(f'%{query}%')
+                    Beat.title.ilike(q_pat, escape='\\') |
+                    Beat.genre.ilike(q_pat, escape='\\') |
+                    Beat.mood_tag.ilike(q_pat, escape='\\')
                 )
             if genre_filter:
-                bq = bq.filter(Beat.genre.ilike(f'%{genre_filter}%'))
+                bq = bq.filter(Beat.genre.ilike(genre_pat, escape='\\'))
             beats_list = bq.order_by(Beat.uploaded_at.desc()).limit(SEARCH_MAX_RESULTS).all()
             if beats_list:
                 beat_ids = [b.id for b in beats_list]
@@ -477,10 +483,10 @@ def search():
                     })
 
         if search_type in ('all', 'producers') and query:
-            producers = User.query.filter(
-                User.username.ilike(f'%{query}%') |
-                User.bio.ilike(f'%{query}%')
-            ).limit(SEARCH_MAX_RESULTS).all()
+            producer_filter = User.username.ilike(q_pat, escape='\\')
+            if current_user.is_authenticated:
+                producer_filter = producer_filter | User.bio.ilike(q_pat, escape='\\')
+            producers = User.query.filter(producer_filter).limit(SEARCH_MAX_RESULTS).all()
             if producers:
                 rows = (db.session.query(follows.c.followed_id, db.func.count(follows.c.follower_id))
                         .filter(follows.c.followed_id.in_([p.id for p in producers]))

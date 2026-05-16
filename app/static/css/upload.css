@@ -678,6 +678,10 @@
   gap: 14px;
 }
 
+.upload-audio-preview[hidden] {
+  display: none;
+}
+
 .upload-audio-preview audio { display: none; }
 
 .audio-play-btn {

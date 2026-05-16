@@ -325,12 +325,34 @@ class TestWalletTopupRoute:
     def test_wallet_topup_post_increases_balance(self, client, seeded_db, app):
         """POST /wallet/topup?amount=15.00 must increase the user's balance."""
         login(client)
-        r = client.post('/wallet/topup?amount=15.00', follow_redirects=True)
+        r = client.post('/wallet/topup?amount=15.00', data={
+            'card_number': '4242 4242 4242 4242',
+            'card_exp': '12/30',
+            'card_cvc': '123',
+        }, follow_redirects=True)
         assert r.status_code == 200
         with app.app_context():
             from app.models import User
             u = User.query.get(seeded_db['user_id'])
             assert u.balance >= 15.0, 'Balance must increase after card top-up'
+        logout(client)
+
+    def test_wallet_topup_rejects_invalid_card(self, client, seeded_db, app):
+        """Card top-up must validate the visible demo card fields server-side."""
+        login(client)
+        with app.app_context():
+            from app.models import User
+            balance_before = User.query.get(seeded_db['user_id']).balance
+        r = client.post('/wallet/topup?amount=15.00', data={
+            'card_number': '123',
+            'card_exp': '99/99',
+            'card_cvc': 'x',
+        }, follow_redirects=True)
+        assert r.status_code == 200
+        assert b'valid demo card number' in r.data
+        with app.app_context():
+            from app.models import User
+            assert User.query.get(seeded_db['user_id']).balance == balance_before
         logout(client)
 
 
@@ -378,6 +400,54 @@ class TestCheckoutRoute:
             buyer = User.query.filter_by(email='buyer99@test.com').first()
             purchase = Purchase.query.filter_by(buyer_id=buyer.id, beat_id=beat_id).first()
             assert purchase is not None, 'A Purchase record must exist after checkout'
+            assert purchase.licence_type == 'lease'
+        logout(client)
+
+    def test_checkout_card_requires_valid_demo_card(self, client, seeded_db, app):
+        """Card checkout must reject malformed demo card details before purchase."""
+        client.post('/register', data={
+            'username': 'cardbuyer', 'email': 'cardbuyer@test.com',
+            'password': 'BuyPass1!', 'confirm_password': 'BuyPass1!',
+        }, follow_redirects=True)
+        client.post('/login', data={'email': 'cardbuyer@test.com', 'password': 'BuyPass1!'})
+
+        beat_id = seeded_db['beat_id']
+        r = client.post(f'/checkout/{beat_id}?tier=lease',
+                        data={'method': 'card', 'card_number': '1', 'card_exp': '99/99', 'card_cvc': 'x'},
+                        follow_redirects=True)
+        assert r.status_code == 200
+        assert b'valid demo card number' in r.data
+
+        with app.app_context():
+            from app.models import Purchase, User
+            buyer = User.query.filter_by(email='cardbuyer@test.com').first()
+            assert Purchase.query.filter_by(buyer_id=buyer.id, beat_id=beat_id).first() is None
+        logout(client)
+
+    def test_checkout_card_purchase_creates_record_with_valid_card(self, client, seeded_db, app):
+        """Valid demo card checkout must create the purchase record."""
+        client.post('/register', data={
+            'username': 'cardbuyer2', 'email': 'cardbuyer2@test.com',
+            'password': 'BuyPass1!', 'confirm_password': 'BuyPass1!',
+        }, follow_redirects=True)
+        client.post('/login', data={'email': 'cardbuyer2@test.com', 'password': 'BuyPass1!'})
+
+        beat_id = seeded_db['beat_id']
+        r = client.post(f'/checkout/{beat_id}?tier=lease',
+                        data={
+                            'method': 'card',
+                            'card_number': '4242 4242 4242 4242',
+                            'card_exp': '12/30',
+                            'card_cvc': '123',
+                        },
+                        follow_redirects=True)
+        assert r.status_code == 200
+
+        with app.app_context():
+            from app.models import Purchase, User
+            buyer = User.query.filter_by(email='cardbuyer2@test.com').first()
+            purchase = Purchase.query.filter_by(buyer_id=buyer.id, beat_id=beat_id).first()
+            assert purchase is not None
             assert purchase.licence_type == 'lease'
         logout(client)
 

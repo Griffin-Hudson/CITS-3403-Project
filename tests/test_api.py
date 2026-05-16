@@ -80,6 +80,30 @@ class TestSearchAPI:
         assert data['beats'] == []
         assert data['producers'] == []
 
+    def test_search_api_does_not_treat_percent_as_wildcard(self, client, seeded_db):
+        r = client.get('/api/search?q=%25')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['beats'] == []
+        assert data['producers'] == []
+
+    def test_search_api_hides_bio_matches_from_anonymous_users(self, client, seeded_db, app):
+        with app.app_context():
+            from app.models import db as _db, User as _User
+            private_user = _User(
+                username='plaincreator',
+                email='plaincreator@example.com',
+                bio='secretuniquebio',
+            )
+            private_user.set_password('PrivatePass1!')
+            _db.session.add(private_user)
+            _db.session.commit()
+
+        r = client.get('/api/search?q=secretuniquebio&type=producers')
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert data['producers'] == []
+
 
 class TestFollowAPI:
     def test_follow_toggle(self, client, seeded_db, app):

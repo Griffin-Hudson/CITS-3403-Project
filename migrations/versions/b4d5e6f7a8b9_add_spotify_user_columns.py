@@ -39,8 +39,10 @@ def upgrade():
 
 
 def downgrade():
+    from sqlalchemy import text
+    conn = op.get_bind()
+    conn.execute(text('DROP INDEX IF EXISTS uq_user_spotify_id'))
     with op.batch_alter_table('user') as batch_op:
-        batch_op.drop_constraint('uq_user_spotify_id', type_='unique')
         batch_op.drop_column('spotify_artist_url')
         batch_op.drop_column('spotify_url')
         batch_op.drop_column('spotify_display_name')
