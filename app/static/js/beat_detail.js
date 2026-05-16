@@ -96,19 +96,24 @@
 
     const volPopover = document.getElementById('bd-vol-popover');
 
+    function setVolumePopover(open) {
+      volPopover.hidden = !open;
+      muteBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
     muteBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      volPopover.hidden = !volPopover.hidden;
+      setVolumePopover(volPopover.hidden);
     });
 
     document.addEventListener('click', function (e) {
       if (!volPopover.hidden && !volPopover.contains(e.target) && e.target !== muteBtn) {
-        volPopover.hidden = true;
+        setVolumePopover(false);
       }
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') volPopover.hidden = true;
+      if (e.key === 'Escape') setVolumePopover(false);
     });
   }
 

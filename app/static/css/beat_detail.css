@@ -119,7 +119,10 @@
   transform: translate(-50%, -50%) scale(1.08);
 }
 .bd-cover-play.is-playing { opacity: 0; }
-.beat-detail-cover-wrap:hover .bd-cover-play.is-playing { opacity: 1; }
+.beat-detail-cover-wrap:hover .bd-cover-play.is-playing,
+.bd-cover-play.is-playing:focus-visible {
+  opacity: 1;
+}
 
 .bd-cover-bottom {
   position: absolute;
