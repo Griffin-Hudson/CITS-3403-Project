@@ -14,6 +14,11 @@
 // FEED_CONFIG is injected by the Jinja template at page load
 const cfg = window.FEED_CONFIG || {};
 
+function urlFromTemplate(template, id, query = '') {
+  const url = String(template || '').replace(/0(?=$|[/?#])/, String(id));
+  return query ? `${url}${query}` : url;
+}
+
 // CSRF token required by Flask-WTF for all state-changing requests
 const CSRF = cfg.csrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '';
 
@@ -1116,7 +1121,7 @@ function initLikeButtons() {
     const btn = e.target.closest('.feed-like-btn');
     if (!btn || btn.disabled) return;
     if (!cfg.isAuthenticated) {
-      window.location.href = '/login';
+      window.location.href = cfg.loginUrl || '/login';
       return;
     }
     const beatId = Number(btn.dataset.beatId);
@@ -1134,7 +1139,7 @@ function initLikeButtons() {
       const countEl = document.getElementById(`likes-count-${beatId}`);
       if (countEl) countEl.textContent = formatNum(data.likes_count);
     } catch (err) {
-      if (err.message.includes('401')) window.location.href = '/login';
+      if (err.message.includes('401')) window.location.href = cfg.loginUrl || '/login';
     } finally {
       btn.disabled = false;
     }
@@ -1148,7 +1153,7 @@ function initFollowButtons() {
     const btn = e.target.closest('.feed-follow-btn');
     if (!btn || btn.disabled) return;
     if (!cfg.isAuthenticated) {
-      window.location.href = '/login';
+      window.location.href = cfg.loginUrl || '/login';
       return;
     }
     const producerId = Number(btn.dataset.producerId);
@@ -1164,7 +1169,7 @@ function initFollowButtons() {
         if (icon) icon.className = 'bi bi-plus-lg';
       }
     } catch (err) {
-      if (err.message.includes('401')) window.location.href = '/login';
+      if (err.message.includes('401')) window.location.href = cfg.loginUrl || '/login';
     } finally {
       btn.disabled = false;
     }
@@ -1278,7 +1283,7 @@ function attachCommentEvents(container, beatId) {
   // Like comment
   container.querySelectorAll('.feed-comment-like-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!cfg.isAuthenticated) { window.location.href = '/login'; return; }
+      if (!cfg.isAuthenticated) { window.location.href = cfg.loginUrl || '/login'; return; }
       const cid = Number(btn.dataset.commentId);
       try {
         const data = await postJSON(`/api/comments/${cid}/like`);
@@ -1294,7 +1299,7 @@ function attachCommentEvents(container, beatId) {
   // Dislike comment — hides the comment visually; re-clicking undoes dislike and shows it
   container.querySelectorAll('.feed-comment-dislike-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!cfg.isAuthenticated) { window.location.href = '/login'; return; }
+      if (!cfg.isAuthenticated) { window.location.href = cfg.loginUrl || '/login'; return; }
       const cid = Number(btn.dataset.commentId);
       try {
         const data = await postJSON(`/api/comments/${cid}/dislike`);
@@ -1330,7 +1335,7 @@ function attachCommentEvents(container, beatId) {
   // Report comment — opens the styled modal instead of a browser confirm
   container.querySelectorAll('.feed-comment-report-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!cfg.isAuthenticated) { window.location.href = '/login'; return; }
+      if (!cfg.isAuthenticated) { window.location.href = cfg.loginUrl || '/login'; return; }
       openReportModal(Number(btn.dataset.commentId), btn);
     });
   });
@@ -1477,7 +1482,7 @@ function initSaveButtons() {
   document.addEventListener('click', async e => {
     const btn = e.target.closest('.feed-save-btn');
     if (!btn || btn.disabled) return;
-    if (!cfg.isAuthenticated) { window.location.href = '/login'; return; }
+    if (!cfg.isAuthenticated) { window.location.href = cfg.loginUrl || '/login'; return; }
     const beatId = Number(btn.dataset.beatId);
     btn.disabled = true;
     try {
@@ -1493,7 +1498,7 @@ function initSaveButtons() {
         btn.setAttribute('aria-label', 'Save this beat');
       }
     } catch (err) {
-      if (err.message && err.message.includes('401')) window.location.href = '/login';
+      if (err.message && err.message.includes('401')) window.location.href = cfg.loginUrl || '/login';
     } finally {
       btn.disabled = false;
     }
@@ -1539,7 +1544,7 @@ function initCommentDrawers() {
       if (replyBanner) replyBanner.classList.remove('is-active');
       loadComments(beatId);
     } catch (err) {
-      if (err.message.includes('401')) window.location.href = '/login';
+      if (err.message.includes('401')) window.location.href = cfg.loginUrl || '/login';
     }
   });
 
@@ -1610,7 +1615,7 @@ function appendBeatCard(beat) {
   function tierAnchor(tier, label, value, extraClass) {
     const isOwned = owned.has(tier);
     const disabled = isOwn || isOwned;
-    const href = disabled ? '#' : `/checkout/${beat.id}?tier=${tier}`;
+    const href = disabled ? '#' : urlFromTemplate(cfg.checkoutUrlTemplate || '/checkout/0', beat.id, `?tier=${tier}`);
     const cls = [
       'feed-pricing-tier',
       extraClass || '',
@@ -1627,13 +1632,16 @@ function appendBeatCard(beat) {
   }
 
   const leaseVal = beat.price === 0 ? 'FREE' : `$${Math.round(beat.price)}`;
+  const beatUrl = urlFromTemplate(cfg.beatUrlTemplate || '/beats/0', beat.id);
+  const profileUrl = urlFromTemplate(cfg.profileUrlTemplate || '/profile/0', beat.producer_id);
+  const loginUrl = cfg.loginUrl || '/login';
   let pricingPanel = `
     <div class="feed-pricing-panel">
       ${tierAnchor('lease', 'Lease', leaseVal, isSolo ? 'feed-pricing-tier-solo' : '')}
       ${beat.premium_price ? tierAnchor('premium', 'Premium', `$${Math.round(beat.premium_price)}`, '') : ''}
       ${beat.exclusive_price ? tierAnchor('exclusive', 'Exclusive', `$${Math.round(beat.exclusive_price)}`, 'feed-pricing-excl') : ''}
     </div>
-    <a href="/beats/${beat.id}" class="feed-ghost-btn">
+    <a href="${beatUrl}" class="feed-ghost-btn">
       <i class="bi bi-info-circle"></i> Details &amp; Purchase
     </a>`;
 
@@ -1679,21 +1687,21 @@ function appendBeatCard(beat) {
     </div>
     <div class="feed-rail">
       <div class="feed-rail-avatar-wrap">
-        <a href="/profile/${beat.producer_id}" class="feed-rail-avatar">
+        <a href="${profileUrl}" class="feed-rail-avatar" title="${escHtml(beat.producer_username || '')}">
           ${producerAvatar}
         </a>
-        <button class="feed-follow-btn ${followClass}" data-producer-id="${beat.producer_id}">
+        <button class="feed-follow-btn ${followClass}" data-producer-id="${beat.producer_id}" aria-label="Follow ${escHtml(beat.producer_username || 'producer')}">
           <i class="bi ${followIcon}"></i>
         </button>
       </div>
       <div class="feed-rail-item">
-        <button class="feed-rail-btn feed-like-btn ${isLiked}" data-beat-id="${beat.id}">
+        <button class="feed-rail-btn feed-like-btn ${isLiked}" data-beat-id="${beat.id}" aria-label="Like this beat">
           <i class="bi ${likedIcon}"></i>
         </button>
         <span class="feed-rail-count" id="likes-count-${beat.id}">${formatNum(beat.likes_count)}</span>
       </div>
       <div class="feed-rail-item">
-        <button class="feed-rail-btn feed-comment-btn" data-beat-id="${beat.id}">
+        <button class="feed-rail-btn feed-comment-btn" data-beat-id="${beat.id}" aria-label="View comments">
           <i class="bi bi-chat-dots-fill"></i>
         </button>
         <span class="feed-rail-count" id="comments-count-${beat.id}">${formatNum(beat.comment_count)}</span>
@@ -1709,7 +1717,7 @@ function appendBeatCard(beat) {
       </div>
     </div>
     <div class="feed-info">
-      <a href="/profile/${beat.producer_id}" class="feed-producer-handle">
+      <a href="${profileUrl}" class="feed-producer-handle">
         @${escHtml(beat.producer_username || 'Unknown')}
       </a>
       <h2 class="feed-beat-title">${escHtml(beat.title)}</h2>
@@ -1724,16 +1732,17 @@ function appendBeatCard(beat) {
     <div class="feed-drawer" id="drawer-${beat.id}" data-beat-id="${beat.id}">
       <div class="feed-drawer-header">
         <span class="feed-drawer-title">Comments</span>
-        <button class="feed-drawer-close" data-beat-id="${beat.id}"><i class="bi bi-x-lg"></i></button>
+        <button class="feed-drawer-close" data-beat-id="${beat.id}" aria-label="Close comments"><i class="bi bi-x-lg"></i></button>
       </div>
       <div class="feed-drawer-list" id="drawer-list-${beat.id}">
         <div class="feed-drawer-loading"><i class="bi bi-arrow-repeat"></i> Loading…</div>
       </div>
       <div class="feed-drawer-input-row">
         ${cfg.isAuthenticated
-          ? `<input type="text" class="feed-drawer-input" placeholder="Add a comment…" data-beat-id="${beat.id}" maxlength="500" />
-             <button class="feed-drawer-send" data-beat-id="${beat.id}"><i class="bi bi-send-fill"></i></button>`
-          : `<a href="/login" class="feed-drawer-login-prompt"><i class="bi bi-person-circle"></i> Sign in to comment</a>`
+          ? `<label class="visually-hidden" for="drawer-input-${beat.id}">Add a comment</label>
+             <input id="drawer-input-${beat.id}" type="text" class="feed-drawer-input" placeholder="Add a comment" data-beat-id="${beat.id}" maxlength="500" />
+             <button class="feed-drawer-send" data-beat-id="${beat.id}" aria-label="Send comment"><i class="bi bi-send-fill"></i></button>`
+          : `<a href="${loginUrl}" class="feed-drawer-login-prompt"><i class="bi bi-person-circle"></i> Sign in to comment</a>`
         }
       </div>
     </div>`;
@@ -1770,7 +1779,7 @@ function initInfiniteScroll() {
 
     try {
       const seen = (cfg.seenIds || []).join(',');
-      const url  = `/api/feed?page=${cfg.nextPage}&seen=${seen}`;
+      const url  = `${cfg.feedApiUrl || '/api/feed'}?page=${cfg.nextPage}&seen=${seen}`;
       const r    = await fetch(url);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();

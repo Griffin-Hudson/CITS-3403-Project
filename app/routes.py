@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from secrets import token_hex
 from urllib.parse import quote, urlencode, urlsplit
 from werkzeug.utils import secure_filename
@@ -40,6 +41,10 @@ MAX_BEAT_COVER_SIZE    = MAX_BEAT_COVER_SIZE_MB * 1024 * 1024
 MAX_MOOD_TAGS = 3
 
 VALID_TIERS = (TIER_LEASE, TIER_PREMIUM, TIER_EXCLUSIVE)
+
+CARD_NUMBER_RE = re.compile(r'^\d{13,19}$')
+CARD_EXP_RE = re.compile(r'^(0[1-9]|1[0-2])/\d{2}$')
+CARD_CVC_RE = re.compile(r'^\d{3,4}$')
 
 # cap search results so a broad query doesnt drag the whole table back
 SEARCH_RESULT_LIMIT = 50
@@ -169,6 +174,19 @@ def _beat_tier_options(beat):
             'checkout_url': '' if disabled_reason else url_for('main.checkout', beat_id=beat.id, tier=tier),
         })
     return options
+
+
+def _validate_demo_card(form_data):
+    number = re.sub(r'\D', '', form_data.get('card_number', ''))
+    exp = form_data.get('card_exp', '').strip()
+    cvc = form_data.get('card_cvc', '').strip()
+    if not CARD_NUMBER_RE.match(number):
+        return 'Enter a valid demo card number.'
+    if not CARD_EXP_RE.match(exp):
+        return 'Enter card expiry as MM/YY.'
+    if not CARD_CVC_RE.match(cvc):
+        return 'Enter a valid CVC.'
+    return ''
 
 
 @main.route('/')
@@ -561,6 +579,10 @@ def wallet_topup():
         return redirect(url_for('main.wallet'))
 
     if request.method == 'POST':
+        card_error = _validate_demo_card(request.form)
+        if card_error:
+            flash(card_error, 'danger')
+            return redirect(url_for('main.wallet_topup', amount=f'{amount:.2f}'))
         try:
             top_up(current_user, amount, note='Wallet top-up via card (demo)')
             db.session.commit()
@@ -615,7 +637,10 @@ def checkout(beat_id):
         elif method == METHOD_BALANCE and (current_user.balance or 0.0) < price:
             error = (f'Insufficient balance. Top up ${price - (current_user.balance or 0.0):.2f} '
                      'more to complete this purchase.')
-        else:
+        elif method == METHOD_CARD:
+            error = _validate_demo_card(request.form)
+
+        if not error:
             try:
                 purchase_beat(current_user, beat, tier, method)
                 db.session.commit()
@@ -628,7 +653,7 @@ def checkout(beat_id):
             if method == METHOD_CARD:
                 # Front-end shows a demo modal before redirect; flash backs it up
                 # in case the modal was dismissed early.
-                flash('Card payment processed (demo — no real charge was made).', 'info')
+                flash('Card payment processed (demo - no real charge was made).', 'info')
             flash(f'{TIER_LABELS[tier]} licence purchased for "{beat.title}".', 'success')
             return redirect(url_for('main.my_feeds'))
 

@@ -19,7 +19,7 @@ def upgrade():
     with op.batch_alter_table('beat') as batch_op:
         batch_op.add_column(sa.Column(
             'currency', sa.String(length=3),
-            nullable=False, server_default='USD',
+            nullable=False, server_default='AUD',
         ))
 
 

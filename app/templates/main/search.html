@@ -58,7 +58,10 @@
     </div>
   </form>
 
-  <div id="search-results" class="search-results">
+  <div id="search-results" class="search-results"
+       data-api-url="{{ url_for('api.search') }}"
+       data-beat-url-template="{{ url_for('main.beat_detail', beat_id=0) }}"
+       data-profile-url-template="{{ url_for('main.profile', user_id=0) }}">
     {% if beats %}
       <section class="search-section">
         <h2 class="search-section-title">Beats</h2>

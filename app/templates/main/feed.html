@@ -315,6 +315,11 @@
     seenIds: [{% for beat in beats %}{{ beat.id }}{% if not loop.last %},{% endif %}{% endfor %}],
     nextPage: 2,
     hasMore: true,
+    loginUrl: "{{ url_for('main.login') }}",
+    feedApiUrl: "{{ url_for('api.feed') }}",
+    beatUrlTemplate: "{{ url_for('main.beat_detail', beat_id=0) }}",
+    profileUrlTemplate: "{{ url_for('main.profile', user_id=0) }}",
+    checkoutUrlTemplate: "{{ url_for('main.checkout', beat_id=0) }}",
   };
 </script>
 {# feed.js: waveform visualiser, IntersectionObserver, AJAX interactions, infinite scroll #}
