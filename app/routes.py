@@ -488,7 +488,7 @@ def edit_profile():
                     flash('Profile picture updated successfully!', 'success')
                     return redirect(url_for('main.edit_profile'))
                 else:
-                    flash(f'File must be under {MAX_UPLOAD_SIZE_MB}MB.', 'danger')
+                    flash(f'Invalid filename or file exceeds {MAX_UPLOAD_SIZE_MB}MB.', 'danger')
             else:
                 flash('Only PNG, JPG, GIF, and WebP files are allowed.', 'danger')
         else:

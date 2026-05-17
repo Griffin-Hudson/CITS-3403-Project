@@ -175,14 +175,14 @@ class TestWalletRoute:
         """A zero or negative top-up amount must be rejected; balance must not change."""
         login(client)
         with app.app_context():
-            from app.models import User
-            u = User.query.get(seeded_db['user_id'])
+            from app.models import db, User
+            u = db.session.get(User, seeded_db['user_id'])
             balance_before = u.balance
         r = client.post('/wallet', data={'amount': '0'}, follow_redirects=True)
         assert r.status_code == 200
         with app.app_context():
-            from app.models import User
-            u = User.query.get(seeded_db['user_id'])
+            from app.models import db, User
+            u = db.session.get(User, seeded_db['user_id'])
             assert u.balance == balance_before, 'Balance must not change after a rejected top-up'
         logout(client)
 
@@ -332,8 +332,8 @@ class TestWalletTopupRoute:
         }, follow_redirects=True)
         assert r.status_code == 200
         with app.app_context():
-            from app.models import User
-            u = User.query.get(seeded_db['user_id'])
+            from app.models import db, User
+            u = db.session.get(User, seeded_db['user_id'])
             assert u.balance >= 15.0, 'Balance must increase after card top-up'
         logout(client)
 
@@ -341,8 +341,8 @@ class TestWalletTopupRoute:
         """Card top-up must validate the visible demo card fields server-side."""
         login(client)
         with app.app_context():
-            from app.models import User
-            balance_before = User.query.get(seeded_db['user_id']).balance
+            from app.models import db, User
+            balance_before = db.session.get(User, seeded_db['user_id']).balance
         r = client.post('/wallet/topup?amount=15.00', data={
             'card_number': '123',
             'card_exp': '99/99',
@@ -351,8 +351,8 @@ class TestWalletTopupRoute:
         assert r.status_code == 200
         assert b'valid demo card number' in r.data
         with app.app_context():
-            from app.models import User
-            assert User.query.get(seeded_db['user_id']).balance == balance_before
+            from app.models import db, User
+            assert db.session.get(User, seeded_db['user_id']).balance == balance_before
         logout(client)
 
 
